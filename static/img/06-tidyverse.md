@@ -33,8 +33,6 @@ editor_options:
 
 ### Using tidyr to reshape data frames
 
-
-
 # Why "tidy" your data?
 
 Tidying allows you to manipulate the structure of your data while

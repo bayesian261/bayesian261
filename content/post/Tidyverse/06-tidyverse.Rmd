@@ -60,6 +60,8 @@ insert_html_math <- make_latex_decorator("", "$$")
 
 ### Using tidyr to reshape data frames
 
+
+
 # Why "tidy" your data?
 
 Tidying allows you to manipulate the structure of your data while

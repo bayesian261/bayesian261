@@ -1,0 +1,250 @@
+---
+title: logistic far from machine learning
+author: Bongani Ncube
+date: '2023-08-17'
+slug: logistic-far-from-machine-learning
+categories: []
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-08-17T19:38:55+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+header-includes:
+
+- <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+---
+
+
+# Generalized linear models
+
+**Exponential Family**
+The theory of GLMs is developed for data with distribution given y the **exponential family**.
+The form of the data distribution that is useful for GLMs is
+
+$$
+f(y;\theta, \phi) = \exp(\frac{\theta y - b(\theta)}{a(\phi)} + c(y, \phi))
+$$
+
+# where
+
+-   $\theta$ is called the natural parameter
+-   $\phi$ is called the dispersion parameter
+
+**Note**:
+
+This family includes the [Gamma], [Normal], [Poisson], and other. For all parameterization of the exponential family, check this 
+
+# **Example**
+
+if we have $Y \sim N(\mu, \sigma^2)$
+
+$$
+\begin{aligned}
+f(y; \mu, \sigma^2) &= \frac{1}{(2\pi \sigma^2)^{1/2}}\exp(-\frac{1}{2\sigma^2}(y- \mu)^2) \\
+&= \exp(-\frac{1}{2\sigma^2}(y^2 - 2y \mu +\mu^2)- \frac{1}{2}\log(2\pi \sigma^2)) \\
+&= \exp(\frac{y \mu - \mu^2/2}{\sigma^2} - \frac{y^2}{2\sigma^2} - \frac{1}{2}\log(2\pi \sigma^2)) \\
+&= \exp(\frac{\theta y - b(\theta)}{a(\phi)} + c(y , \phi))
+\end{aligned}
+$$
+
+# where
+
+-   $\theta = \mu$
+-   $b(\theta) = \frac{\mu^2}{2}$
+-   $a(\phi) = \sigma^2 = \phi$
+-   $c(y , \phi) = - \frac{1}{2}(\frac{y^2}{\phi}+\log(2\pi \sigma^2))$
+
+# Logistic Regression
+
+Logistic regression estimates the probability of a particular level of a categorical response variable given a set of predictors. The response levels can be binary, nominal (multiple categories), or ordinal (multiple levels).  
+
+The **binary** logistic regression model is
+
+##
+
+$$y = logit(\pi) = \ln \left( \frac{\pi}{1 - \pi} \right) = X \beta$$
+
+where $\pi$ is the event probability. The model predicts the *log odds* of the response variable.  The maximum likelihood estimator maximizes the likelihood function
+
+##
+
+$$L(\beta; y, X) = \prod_{i=1}^n \pi_i^{y_i}(1 - \pi_i)^{(1-y_i)} = \prod_{i=1}^n\frac{\exp(y_i X_i \beta)}{1 + \exp(X_i \beta)}.$$
+
+# goal
+
+> the goal of this article is to use logistic regression from a statistical stead point i.e learn how to build parsimonious models using statistical criteria
+
+> we also seek to use the R's sophisticated tools to help in deriving insights from the data
+
+## Dataset
+
+We will use a dataset named `stroke.dta` which in STATA\index{STATA} format. These data come from a study of hospitalized stroke patients. our main variables of interest are:
+
+##
+
+- status : Status of patient during hospitalization (alive or dead)
+- gcs : Glasgow Coma Scale on admission (range from 3 to 15)
+- stroke_type : IS (Ischaemic Stroke) or HS (Haemorrhagic Stroke)
+- sex : female or male
+- dm : History of Diabetes (yes or no)
+- sbp : Systolic Blood Pressure (mmHg)
+- age : age of patient on admission
+
+# setup
+
+```r
+# load in packages
+library(tidyverse)
+```
+
+```
+## Warning: package 'ggplot2' was built under R version 4.2.3
+```
+
+```
+## Warning: package 'tibble' was built under R version 4.2.3
+```
+
+```
+## Warning: package 'dplyr' was built under R version 4.2.3
+```
+
+```
+## -- Attaching core tidyverse packages ------------------------ tidyverse 2.0.0 --
+## v dplyr     1.1.2     v readr     2.1.4
+## v forcats   1.0.0     v stringr   1.5.0
+## v ggplot2   3.4.2     v tibble    3.2.1
+## v lubridate 1.9.2     v tidyr     1.3.0
+## v purrr     1.0.1     
+## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+## i Use the ]8;;http://conflicted.r-lib.org/conflicted package]8;; to force all conflicts to become errors
+```
+
+```r
+library(haven)
+library(rms)
+```
+
+```
+## Loading required package: Hmisc
+## 
+## Attaching package: 'Hmisc'
+## 
+## The following objects are masked from 'package:dplyr':
+## 
+##     src, summarize
+## 
+## The following objects are masked from 'package:base':
+## 
+##     format.pval, units
+## 
+## Loading required package: survival
+## Loading required package: lattice
+## Loading required package: SparseM
+## 
+## Attaching package: 'SparseM'
+## 
+## The following object is masked from 'package:base':
+## 
+##     backsolve
+```
+
+```r
+library(broom)
+
+fatal <- read_dta('stroke.dta')
+write.csv(fatal,"stroke_dat.csv")
+```
+
+Take a peek at data to check for 
+
+- variable names
+- variable types 
+
+#
+##
+
+```r
+> glimpse(fatal)
+
+Rows: 226
+Columns: 7
+$ sex         <dbl+lbl> 1, 1, 1, 2, 1, 2, 2, 1, 2, 2, 1, 2, 2, 2, 2, 1, 2, 1~
+$ status      <dbl+lbl> 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1~
+$ gcs         <dbl> 13, 15, 15, 15, 15, 15, 13, 15, 15, 10, 15, 15, 15, 15, ~
+$ sbp         <dbl> 143, 150, 152, 215, 162, 169, 178, 180, 186, 185, 122, 2~
+$ dm          <dbl+lbl> 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1~
+$ age         <dbl> 50, 58, 64, 50, 65, 78, 66, 72, 61, 64, 63, 59, 64, 62, ~
+$ stroke_type <dbl+lbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0~
+```
+
+
+# Explore data
+
+Variables sex, status, dm and stroke type are labelled variables though they are coded as numbers. The numbers represent the groups or categories or levels of the variables. They are categorical variables and not real numbers.
+
+##
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,103 @@
+---
+title: "Ncube fitness training dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: fill
+    orientation: rows
+    source_code: embed
+---
+
+<!--- .css scripts can be added directly into html markdown docs --->
+<style type="text/css">
+
+.navbar-inverse .navbar-nav>.active>a, .navbar-inverse .navbar-nav>.active>a:hover, .navbar-inverse .navbar-nav>.active>a:focus {
+color:gold!important;
+background-color: #303030;
+border-color: #002a4c;
+font-weight: 900;
+}
+
+.chart-title {
+    border-bottom: 1px solid #d7d7d7;
+    color: orange;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 7px 10px 4px;
+}
+
+.heading-level1 {  /* chart_title  */
+   color: #00467f;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+h4, .h4 {
+   color: #002a4c;
+    font-size: 15px;
+    font-weight: 550;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+</style>
+
+
+<!--- the example above changes the header bars colors --->
+
+
+
+```r
+pacman::p_load("tidyverse",
+               "tidymodels",
+               "magrittr",
+               "here", 
+               "scales", 
+               "glmnet", 
+               "stacks", 
+               "janitor", 
+               "finetune", 
+               "vip",
+               "data.table",
+               "DT",
+               "alluvial",
+               "extrafont",
+               "gt",
+               "gtsummary",
+               "flexdashboard")
+```
+
+Overview
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
