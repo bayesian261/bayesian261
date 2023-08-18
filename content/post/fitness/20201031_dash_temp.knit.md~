@@ -1,0 +1,223 @@
+---
+title: "Ncube fitness training dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: fill
+    orientation: rows
+    source_code: embed
+---
+
+<!--- .css scripts can be added directly into html markdown docs --->
+<style type="text/css">
+
+.navbar-inverse .navbar-nav>.active>a, .navbar-inverse .navbar-nav>.active>a:hover, .navbar-inverse .navbar-nav>.active>a:focus {
+color:gold!important;
+background-color: #303030;
+border-color: #002a4c;
+font-weight: 900;
+}
+
+.chart-title {
+    border-bottom: 1px solid #d7d7d7;
+    color: orange;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 7px 10px 4px;
+}
+
+.heading-level1 {  /* chart_title  */
+   color: #00467f;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+h4, .h4 {
+   color: #002a4c;
+    font-size: 15px;
+    font-weight: 550;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+</style>
+
+
+<!--- the example above changes the header bars colors --->
+
+
+
+```r
+pacman::p_load("tidyverse",
+               "tidymodels",
+               "magrittr",
+               "here", 
+               "scales", 
+               "glmnet", 
+               "stacks", 
+               "janitor", 
+               "finetune", 
+               "vip",
+               "data.table",
+               "DT",
+               "alluvial",
+               "extrafont",
+               "gt",
+               "gtsummary",
+               "flexdashboard")
+```
+
+Overview
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+
+```r
+df<-readr::read_csv("fitness_class_2212.csv")   #readin
+```
+
+```
+## Rows: 1500 Columns: 8
+## -- Column specification --------------------------------------------------------
+## Delimiter: ","
+## chr (4): days_before, day_of_week, time, category
+## dbl (4): booking_id, months_as_member, weight, attended
+## 
+## i Use `spec()` to retrieve the full column specification for this data.
+## i Specify the column types or set `show_col_types = FALSE` to quiet this message.
+```
+
+```r
+df<-df|> 
+  mutate_at(c(5,6,7),as.factor) |>   # change these columns to factors
+  mutate(attended2=ifelse(attended==1,"yes","no"),
+         day_of_week = 
+           fct_collapse(day_of_week,Wed=c("Wed","Wednesday"),
+                                  Fri=c("Fri.","Fri"), # collapse redundant levels
+                                  Mon=c("Mon","Monday")),
+         category=fct_collapse(category,unknown=c("-")), # add category(unknown)
+         days_before=readr::parse_number(days_before)) # leave only numbers in the dataset
+```
+
+### Total number of members recorded {.value-box}
+
+
+```r
+wardTotal <- nrow(df)
+valueBox(wardTotal, "Total number of members recorded", icon="fa-desktop", color = ggthemes::tableau_color_pal()(1))
+```
+
+```{=html}
+<span class="value-output" data-caption="Total number of members recorded" data-icon="fa-desktop" data-color="#4E79A7" data-color-text="#1a1a1a" data-color-icon="#a7bcd3">1500</span>
+```
+
+### maximum months as member {.value-box}
+
+
+```r
+bcTotal <- max(df$months_as_member, na.rm = TRUE)
+valueBox(bcTotal, "maximum number of months",  icon="fa-desktop", color = "orange")
+```
+
+```{=html}
+<span class="value-output" data-caption="maximum number of months" data-icon="fa-desktop" data-color="#FFA500" data-color-text="#1a1a1a" data-color-icon="#ffd280">148</span>
+```
+
+### attendance proportion {.value-box}
+
+
+```r
+perCU <- round(mean(df$attended)*100,2)
+valueBox(paste(perCU, "%"), "Proportion of members that attended", icon="fa-desktop", color = tvthemes::avatar_pal()(1))
+```
+
+```{=html}
+<span class="value-output" data-caption="Proportion of members that attended" data-icon="fa-desktop" data-color="#ECB100" data-color-text="#1a1a1a" data-color-icon="#f6d880">30.27 %</span>
+```
+
+### mean weight of attendees
+
+
+```r
+cu_rolling_avg <- mean(df$weight, na.rm = TRUE)          #7 day average CU Boulder
+gauge(value = cu_rolling_avg,
+      min = min(df$weight,na.rm = T), 
+      max = max(df$weight,na.rm = T), 
+      sectors = gaugeSectors(success=c(55,85),
+                             warning=c(86,100),
+                             danger=c(101,200)))                  
+```
+
+```{=html}
+<div class="gauge html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-9a975d12498910717a47" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-9a975d12498910717a47">{"x":{"value":82.6103783783784,"min":55.41,"max":170.52,"customSectors":{"percents":false,"ranges":[{"lo":55,"hi":85,"color":"rgba(63, 182, 24, 0.7)"},{"lo":86,"hi":100,"color":"rgba(255, 117, 24, 0.7)"},{"lo":101,"hi":200,"color":"rgba(255, 0, 57, 0.7)"}]},"symbol":null,"label":null,"humanFriendly":true,"humanFriendlyDecimal":1,"href":null},"evals":[],"jsHooks":[]}</script>
+```
+
+column {data-width=400}
+-----------------------------------------------------------------------
+
+### Proportion of attendees
+
+
+```r
+loadfonts(quiet=TRUE)
+
+iv_rates <- df |>
+  mutate(attended=ifelse(attended2==1,"yes","no"),
+         attended=as.factor(attended2)) |> 
+  group_by(attended) |>
+  summarize(count = n()) |> 
+  mutate(prop = count/sum(count)) |>
+  ungroup() 
+
+plot<-iv_rates |>
+  ggplot(aes(x=attended, y=prop, fill=attended)) + 
+  geom_col(color="black",width = 0.5)+ 
+  theme(legend.position="bottom") + 
+  geom_label(aes(label=scales::percent(prop)), color="white") + 
+  labs(
+    title = "attendance ratio",
+    subtitle = "Fitness analysis",
+    y = "proportion(%)", 
+    x = "attendance",
+    fill="attendance",
+    caption="B.Ncube::Data enthusiast") + 
+  scale_y_continuous(labels = scales::percent)+ 
+  tvthemes::scale_fill_kimPossible()+
+  tvthemes::theme_theLastAirbender(title.font="Slayer",
+                                   text.font = "Slayer")+
+  theme(legend.position = 'right')
+```
+
+```
+## Warning: 'tvthemes::theme_theLastAirbender' is deprecated.
+## Use 'theme_avatar' instead.
+## See help("Deprecated")
+```
+
+```r
+plot
+```
+
+<img src="20201031_dash_temp_files/figure-html/unnamed-chunk-7-1.png" width="960" />
+
+### attendence status vs numeric variables
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
