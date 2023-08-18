@@ -22,6 +22,15 @@ sections:
       icon: calculator
       icon_pack: fas
       name: Mathematics
+    - description: 80%
+      icon: atom
+      icon_pack: fas
+      name: Machine Learning
+    - description: 50%
+      icon: python
+      icon_pack: fab
+      name: python
+      
     title: Skills
 - block: experience
   content:
@@ -54,7 +63,7 @@ sections:
   content:
     date_format: Jan 2006
     items:
-    - certificate_url: https://careerhub-api.datacamp.com/certificates/DSA0014497644216
+    - certificate_url: https://www.datacamp.com/certificate/DSA0014497644216
       date_end: ""
       date_start: "2023-06-25"
       description: ""
@@ -62,6 +71,16 @@ sections:
       organization_url: https://www.datacamp.com
       title: Data Scientist Associate
       url: ""
+      
+    - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/cb7f291e87810b77c3c240c242e0712bab8556f6
+      date_end: ""
+      date_start: "2022-09-25"
+      description: ""
+      organization: Datacamp
+      organization_url: https://www.datacamp.com
+      title: Fundamentals of Bayesian Data analysis in R
+      url: ""
+
     - certificate_url: https://www.datacamp.com/statement-of-accomplishment/track/25b6113cff605043f45a51720cfbcb68068016f4?raw=1
       date_end: ""
       date_start: "2023-07-01"
@@ -70,6 +89,7 @@ sections:
       organization_url: https://www.datacamp.com
       title: Machine Learning Scientist with an R track
       url: https://https://www.datacamp.com/statement-of-accomplishment/course/cb7f291e87810b77c3c240c242e0712bab8556f6?raw=1
+      
     - certificate_url: https://www.datacamp.com
       date_end: "2022-12-21"
       date_start: "2022-07-01"
@@ -78,8 +98,48 @@ sections:
       organization_url: https://www.datacamp.com
       title: Object-Oriented Programming in R
       url: ""
+    - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/c41d125747af17f155d9c609de0200715de1ad0d
+      date_end: ""
+      date_start: "2022-04-01"
+      description: Generalised Linear Models
+      organization: Datacamp
+      organization_url: https://www.datacamp.com
+      title: Generalised Linear Models
+      url: https://https://www.datacamp.com/statement-of-accomplishment/course/cb7f291e87810b77c3c240c242e0712bab8556f6?raw=1
+    - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/b3a5e79c8c31ac7450a777a3f6856e1e0410f2da
+      date_end: ""
+      date_start: "2022-04-01"
+      description: Credit Risk Modeling in R
+      organization: Datacamp
+      organization_url: https://www.datacamp.com
+      title: Credit Risk Modeling in R
+      url: https://https://www.datacamp.com/statement-of-accomplishment/course/cb7f291e87810b77c3c240c242e0712bab8556f6?raw=1
+    - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/5ba50787081ffdfe19bf386050bf1eacbb9830da
+      date_end: "2022-12-21"
+      date_start: "2022-07-01"
+      description: ""
+      organization: DataCamp
+      organization_url: https://www.datacamp.com
+      title: Forcasting in R
+      
+    - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/feb58223ead4f5645570c9846527bd0d158b601e?raw=1
+      date_end: "2023-08-10"
+      date_start: "2023-08-12"
+      description: ""
+      organization: DataCamp
+      organization_url: https://www.datacamp.com
+      title: Building Dashboards with Flexdashboard
+    - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/d390325a9fa1fb4d50be7a8bd1af34da366f0c9d?raw=1
+      date_end: "2022-12-21"
+      date_start: "2022-07-01"
+      description: ""
+      organization: DataCamp
+      organization_url: https://www.datacamp.com
+      title: Joining Data with SQL
+
+
     subtitle: null
-    title: Accomplish&shy;ments
+    title: Course
   design:
     columns: "2"
 - block: collection
