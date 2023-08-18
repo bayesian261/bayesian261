@@ -1,56 +1,54 @@
 ---
-bio: My research interests include distributed robotics, mobile computing and programmable
+bio: My research interests include Data science,statistics,bayesian modeling,Machine learning and mathematical modeling
   matter.
 education:
   courses:
-  - course: PhD in Artificial Intelligence
-    institution: Stanford University
-    year: 2012
-  - course: MEng in Artificial Intelligence
-    institution: Massachusetts Institute of Technology
-    year: 2009
-  - course: BSc in Artificial Intelligence
-    institution: Massachusetts Institute of Technology
-    year: 2008
+  - course: Bsc in Statistics 
+    institution: University of Zimbabwe
+    year: 2023
+  - course: Data science associate
+    institution: Datacamp
+    year: 2023
+  
 email: ""
-first_name: Alice
+first_name: Bongani
 highlight_name: true
 interests:
-- Artificial Intelligence
-- Computational Linguistics
-- Information Retrieval
-last_name: Wu
+- Bayesian Statistics
+- Data science
+- Machine learning
+last_name: Ncube
 organizations:
-- name: Stanford University
+- name: MartDat Analytics
   url: https://www.stanford.edu/
-role: Professor of Artificial Intelligence
+role: Data Analyst
 social:
 - icon: envelope
   icon_pack: fas
   link: /#contact
 - display:
     header: true
-  icon: twitter
-  icon_pack: fab
-  label: Follow me on Twitter
-  link: https://twitter.com/GeorgeCushen
 - icon: graduation-cap
   icon_pack: fas
   link: https://scholar.google.co.uk/citations?user=sIwtMXoAAAAJ
 - icon: github
   icon_pack: fab
-  link: https://github.com/gcushen
+  link: https://github.com/bayesian261
 - icon: linkedin
   icon_pack: fab
-  link: https://www.linkedin.com/
+  link: https://www.linkedin.com/in/ncube-bongani-b90094210/
 - icon: cv
   icon_pack: ai
   link: uploads/resume.pdf
 status:
   icon: ☕️
 superuser: true
-title: Alice Wu 吳恩達
+title: Bongani Ncube 
 ---
 
-Alice Wu is a professor of artificial intelligence at the Stanford AI Lab. Her research interests include distributed robotics, mobile computing and programmable matter. She leads the Robotic Neurobiology group, which develops self-reconfiguring robots, systems of self-organizing robots, and mobile sensor networks.
+Bongani Ncube is A well-rounded data professional who is enthusiastic about developing statistical models, from early models and evidence synthesis through to final model submissions.
+
+My undergraduate degree program provided a mature and holistic understanding of statistical learning. An eye for detail coupled with deep intrigue for statistics and data science spurred on the development of skills.
+
+Thus, has deep data analytics skills with high statistical programming proficiency. Experience in varied backgrounds, with a enthusiasm for continuous learning, provides a uniquely diverse skill set.
 {style="text-align: justify;"}
