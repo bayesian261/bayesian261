@@ -80,6 +80,37 @@ sections:
       organization_url: https://www.datacamp.com
       title: Fundamentals of Bayesian Data analysis in R
       url: ""
+    - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/7e8a6f414b289129be5474192a80364106687bb4?raw=1
+      date_end: "2022-12-21"
+      date_start: "2022-07-01"
+      description: ""
+      organization: DataCamp
+      organization_url: https://www.datacamp.com
+      title: Modeling with Tidymodels
+      
+    - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/26f8fab9a8b488a260093c306b7fd74b638cadf3?raw=1
+      date_end: "2022-12-21"
+      date_start: "2022-07-01"
+      description: ""
+      organization: DataCamp
+      organization_url: https://www.datacamp.com
+      title: Nonlinear Modeling with general additive models in R
+      
+    - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/ee9a0cef094d8ad566bf48912721eca1602e055e?raw=1
+      date_end: "2022-12-21"
+      date_start: "2022-07-01"
+      description: ""
+      organization: DataCamp
+      organization_url: https://www.datacamp.com
+      title:  Introduction to Spark with Sparkylr in  R
+
+    - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/b8dc811ff05a59d1347b854aaf384a95e8d8cf26?raw=1
+      date_end: "2022-12-21"
+      date_start: "2022-07-01"
+      description: ""
+      organization: DataCamp
+      organization_url: https://www.datacamp.com
+      title: Machine learning for marketing Analytics in R
 
     - certificate_url: https://www.datacamp.com/statement-of-accomplishment/track/25b6113cff605043f45a51720cfbcb68068016f4?raw=1
       date_end: ""

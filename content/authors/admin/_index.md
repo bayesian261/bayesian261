@@ -47,6 +47,7 @@ status:
 superuser: true
 title: Bongani Ncube 
 ---
+> “Your profession is not what brings your weekly paycheck, your profession is what you’re put here on earth to do, with such passion and intensity that it becomes spiritual in calling.” - Vincent Van Gogh
 
 Bongani Ncube is A well-rounded data professional who is enthusiastic about developing statistical models, from early models and evidence synthesis through to final model submissions.
 
