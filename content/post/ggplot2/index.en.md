@@ -45,7 +45,50 @@ To work with **ggplot2**\index{ggplot2}, remember that at least your R codes mus
 
 ```r
 library(tidyverse)
+```
+
+```
+## Warning: package 'ggplot2' was built under R version 4.2.3
+```
+
+```
+## Warning: package 'tibble' was built under R version 4.2.3
+```
+
+```
+## Warning: package 'dplyr' was built under R version 4.2.3
+```
+
+```
+## -- Attaching core tidyverse packages ------------------------ tidyverse 2.0.0 --
+## v dplyr     1.1.2     v readr     2.1.4
+## v forcats   1.0.0     v stringr   1.5.0
+## v ggplot2   3.4.2     v tibble    3.2.1
+## v lubridate 1.9.2     v tidyr     1.3.0
+## v purrr     1.0.1     
+## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+## i Use the ]8;;http://conflicted.r-lib.org/conflicted package]8;; to force all conflicts to become errors
+```
+
+```r
 loan_data <- read_csv('loan_data_cleaned.csv')
+```
+
+```
+## New names:
+## Rows: 29091 Columns: 9
+## -- Column specification
+## -------------------------------------------------------- Delimiter: "," chr
+## (4): grade, home_ownership, emp_cat, ir_cat dbl (5): ...1, loan_status,
+## loan_amnt, annual_inc, age
+## i Use `spec()` to retrieve the full column specification for this data. i
+## Specify the column types or set `show_col_types = FALSE` to quiet this message.
+## * `` -> `...1`
+```
+
+```r
 loan_data <- loan_data |>
   mutate(default=ifelse(loan_status==1,"defaulted","not defaulted")) |> 
   mutate_if(is.character,as.factor)
@@ -59,7 +102,7 @@ loan_data <- loan_data |>
 ggplot()
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-2-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-2-1.png" width="672" />
 
 # next up
 
@@ -69,7 +112,7 @@ ggplot()
 ggplot(data=loan_data)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-3-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-3-1.png" width="672" />
 
 # grammar of graphics
 
@@ -82,7 +125,7 @@ ggplot(data=loan_data) +
   geom_point(mapping=aes(x=annual_inc, y=loan_amnt))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-4-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-4-1.png" width="672" />
 
 # refining...
 
@@ -96,7 +139,7 @@ ggplot(data=loan_data) +
   geom_point(mapping=aes(x=annual_inc, y=loan_amnt, shape=default))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-5-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-5-1.png" width="672" />
 
 # not neat!!..try color.
 
@@ -107,7 +150,7 @@ ggplot(data=loan_data) +
   geom_point(mapping=aes(x=annual_inc, y=loan_amnt, color=default))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-6-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-6-1.png" width="672" />
 
 # try size!
 
@@ -118,7 +161,11 @@ ggplot(data=loan_data) +
   geom_point(mapping=aes(x=annual_inc, y=loan_amnt, color=default, size=grade))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-7-1.png" width="1023.999552" />
+```
+## Warning: Using size for a discrete variable is not advised.
+```
+
+<img src="staticunnamed-chunk-7-1.png" width="672" />
 
 # transparency
 
@@ -131,7 +178,11 @@ ggplot(data=loan_data) +
   geom_point(mapping=aes(x=annual_inc, y=loan_amnt, color=default, size=grade), alpha=1)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-8-1.png" width="1023.999552" />
+```
+## Warning: Using size for a discrete variable is not advised.
+```
+
+<img src="staticunnamed-chunk-8-1.png" width="672" />
 
 # very transparent
 
@@ -141,7 +192,11 @@ ggplot(data=loan_data) +
   geom_point(mapping=aes(x=annual_inc, y=loan_amnt, color=default, size=grade), alpha=1/100)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-9-1.png" width="1023.999552" />
+```
+## Warning: Using size for a discrete variable is not advised.
+```
+
+<img src="staticunnamed-chunk-9-1.png" width="672" />
 
 # How many people defaulted?
 
@@ -152,7 +207,7 @@ ggplot(data=loan_data) +
   geom_bar(mapping=aes(x=default))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-10-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-10-1.png" width="672" />
 
 # Break it out by grade
 
@@ -162,7 +217,7 @@ ggplot(data=loan_data) +
   geom_bar(mapping=aes(x=default, color=grade))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-11-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-11-1.png" width="672" />
 
 # Well, that's unsatisfying!  Try fill instead of color
 
@@ -172,7 +227,7 @@ ggplot(data=loan_data) +
   geom_bar(mapping=aes(x=default, fill=grade))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-12-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-12-1.png" width="672" />
 
 # How about loan amount by default status?
 
@@ -182,11 +237,14 @@ ggplot(data=loan_data) +
 loan_data %>%
   group_by(default) %>%
   summarize(average_amount=mean(loan_amnt))
-#> # A tibble: 2 x 2
-#>   default       average_amount
-#>   <fct>                  <dbl>
-#> 1 defaulted              9389.
-#> 2 not defaulted          9619.
+```
+
+```
+## # A tibble: 2 x 2
+##   default       average_amount
+##   <fct>                  <dbl>
+## 1 defaulted              9389.
+## 2 not defaulted          9619.
 ```
 
 # And I can pipe that straight into ggplot
@@ -215,7 +273,7 @@ loan_data %>%
   geom_col(mapping=aes(x=default, y=average_amount))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-15-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-15-1.png" width="672" />
 
 # Histograms
 
@@ -228,7 +286,19 @@ ggplot(data=loan_data) +
   geom_histogram(mapping=aes(x=annual_inc), origin=0)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-16-1.png" width="1023.999552" />
+```
+## Warning: The `origin` argument of `stat_bin()` is deprecated as of ggplot2 2.1.0.
+## i Please use the `boundary` argument instead.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.
+```
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+<img src="staticunnamed-chunk-16-1.png" width="672" />
 
 # What if we want fewer groups? Let's ask for 4 bins
 
@@ -238,7 +308,7 @@ ggplot(data=loan_data) +
   geom_histogram(mapping=aes(x=annual_inc), bins=4, origin=0)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-17-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-17-1.png" width="672" />
 
 # Or 10 bins.
 
@@ -248,7 +318,7 @@ ggplot(data=loan_data) +
   geom_histogram(mapping=aes(x=annual_inc), bins=10, origin=0)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-18-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-18-1.png" width="672" />
 
 # Or we can specify the width of the bins instead
 
@@ -258,7 +328,7 @@ ggplot(data=loan_data) +
   geom_histogram(mapping=aes(x=annual_inc), binwidth=1000, origin=0)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-19-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-19-1.png" width="672" />
 
 # large binwidth
 
@@ -268,7 +338,7 @@ ggplot(data=loan_data) +
   geom_histogram(mapping=aes(x=annual_inc), binwidth=10000, origin=0)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-20-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-20-1.png" width="672" />
 
 # changing background
 
@@ -280,7 +350,7 @@ ggplot(data=loan_data) +
   theme(plot.background=element_rect(fill='purple'))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-21-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-21-1.png" width="672" />
 
 # Change the panel background color
 
@@ -291,7 +361,7 @@ ggplot(data=loan_data) +
   theme(panel.background=element_rect(fill='purple'))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-22-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-22-1.png" width="672" />
 
 # Let's be minimalist and make both backgrounds disappear
 
@@ -302,7 +372,7 @@ ggplot(data=loan_data) +
   theme(plot.background=element_blank())
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-23-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-23-1.png" width="672" />
 
 # Add grey gridlines
 
@@ -314,7 +384,7 @@ ggplot(data=loan_data) +
   theme(panel.grid.major=element_line(color="grey"))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-24-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-24-1.png" width="672" />
 
 # Only show the y-axis gridlines
 
@@ -327,10 +397,17 @@ ggplot(data=loan_data) +
   scale_fill_manual(values=c("orange","blue","green","blue4"))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-25-1.png" width="864" />
+<img src="staticunnamed-chunk-25-1.png" width="864" />
 
 ```r
 library(ggthemes)
+```
+
+```
+## Warning: package 'ggthemes' was built under R version 4.2.3
+```
+
+```r
 ggplot(data=loan_data) +
   geom_bar(mapping=aes(x=loan_status, fill=home_ownership)) +
   theme(panel.background=element_blank()) +
@@ -341,7 +418,7 @@ ggplot(data=loan_data) +
   theme_wsj()
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-26-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-26-1.png" width="672" />
 
 
 ```r
@@ -350,5 +427,5 @@ ggplot(data=loan_data, aes(x = loan_status)) +
   theme(axis.text.x = element_text(angle = 90))
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-27-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-27-1.png" width="672" />
 

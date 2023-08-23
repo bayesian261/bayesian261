@@ -26,32 +26,7 @@ editor_options:
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE, 
-                      echo = TRUE, 
-                      message = FALSE, 
-                      warning = FALSE,
-                      fig.height=6, 
-                      fig.width = 1.777777*6,
-                      tidy = FALSE, 
-                      comment = NA, 
-                      highlight = TRUE, 
-                      prompt = FALSE, 
-                      crop = TRUE,
-                      comment = "#>",
-                      collapse = TRUE)
-knitr::opts_knit$set(width = 60)
-library(tidyverse)
-library(reshape2)
-theme_set(theme_light(base_size = 16))
-make_latex_decorator <- function(output, otherwise) {
-  function() {
-      if (knitr:::is_latex_output()) output else otherwise
-  }
-}
-insert_pause <- make_latex_decorator(". . .", "\n")
-insert_slide_break <- make_latex_decorator("----", "\n")
-insert_inc_bullet <- make_latex_decorator("> *", "*")
-insert_html_math <- make_latex_decorator("", "$$")
+knitr::opts_chunk$set(echo = TRUE,fig.path = "static") 
 ```
 
 # background
