@@ -1,7 +1,7 @@
 ---
 title: logistic far from machine learning
 author: Bongani Ncube
-date: '2023-08-17'
+date: '2023-08-23'
 slug: logistic-far-from-machine-learning
 categories: []
 tags: []
@@ -18,6 +18,11 @@ projects: []
 
 ---
 
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
 
 # Generalized linear models
 
