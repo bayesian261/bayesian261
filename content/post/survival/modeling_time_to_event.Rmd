@@ -19,6 +19,9 @@ projects: []
 subtitle: Cox Proportional Hazards
 ---
 
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE,fig.path = "static") 
+```
 
 ```{r,echo=FALSE}
 library(bannerCommenter)
