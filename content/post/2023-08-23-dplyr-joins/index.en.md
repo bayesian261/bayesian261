@@ -22,6 +22,7 @@ projects: []
 <script src="{{< blogdown/postref >}}index.en_files/kePrint/kePrint.js"></script>
 <link href="{{< blogdown/postref >}}index.en_files/lightable/lightable.css" rel="stylesheet" />
 
+
 # *Background*
 
 GoalZone is a fitness club chain in Canada. GoalZone offers a range of
@@ -156,6 +157,7 @@ as_tibble(installed.packages())  |>
   </tr>
 </tbody>
 </table>
+
 ## Buckle up 👨‍🚀
 
 ### Why R?
@@ -417,7 +419,7 @@ legend(x = c(4000, 3200), y = c(8000, 5500),
        xjust=-1.8)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-13-1.png" width="672" />
+<img src="staticunnamed-chunk-13-1.png" width="672" />
 + notice hear that i have removed missing values when finding the mean and median
 + lets do it using ggplot2 but try to add more statistical measures
 
@@ -556,7 +558,7 @@ df |>
 ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-20-1.png" width="672" />
+<img src="staticunnamed-chunk-20-1.png" width="672" />
 + the data seem to skewed to right
 
 ## Understanding Q-Plots 
@@ -575,7 +577,7 @@ qqnorm(df$weight, col="blue")
 qqline(df$weight, col="red")
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-21-1.png" width="672" />
+<img src="staticunnamed-chunk-21-1.png" width="672" />
 
 # lets look at the boxplot as well
 
@@ -590,7 +592,7 @@ df |>
   coord_flip()
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-22-1.png" width="672" />
+<img src="staticunnamed-chunk-22-1.png" width="672" />
 ## A Word Regarding Outliers: 
 + the red values represent outliers
 

@@ -20,6 +20,9 @@ image:
 projects: []
 ---
 
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE,fig.path = "static") 
+```
 # *Background*
 
 GoalZone is a fitness club chain in Canada. GoalZone offers a range of
@@ -78,6 +81,7 @@ as_tibble(installed.packages())  |>
   kbl() |>
   kable_material(c("striped", "hover"))
 ```
+
 ## Buckle up 👨‍🚀
 
 ### Why R?
