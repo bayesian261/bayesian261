@@ -2,20 +2,27 @@
 title: "A beginner's guide to Machine Learning with R"
 author: "Bongani Ncube"
 date: "Aug 22, 2023"
-output:
-  pdf_document:
-    toc: yes
-  html_document:
-    toc: yes
-    theme: readable
-    highlight: tango
+categories: []
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-08-17T19:38:55+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+
 ---
+
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
        message = FALSE,
-       warning = FALSE,
-       fig.align='center')
+       warning = FALSE
+       )
 ```
 
 # Introduction

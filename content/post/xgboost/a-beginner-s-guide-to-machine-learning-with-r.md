@@ -2,13 +2,19 @@
 title: "A beginner's guide to Machine Learning with R"
 author: "Bongani Ncube"
 date: "Aug 22, 2023"
-output:
-  pdf_document:
-    toc: yes
-  html_document:
-    toc: yes
-    theme: readable
-    highlight: tango
+categories: []
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-08-17T19:38:55+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+
 ---
 
 <script src="/rmarkdown-libs/htmlwidgets/htmlwidgets.js"></script>
@@ -116,7 +122,7 @@ pairs.panels(
        main = 'Correlation matrix of Iris data')  # Title. 
 ```
 
-<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" />
+<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-5-1.png" width="672" />
 
 The upper part of the correlation matrix tells us the correlation between the variables and we can see that there is a moderate to strong correlation between all variables except for between *sepal length* and *sepal width*. Looking at the bottom half of the matrix gives us additional insight into not only the scatter plots of these correlations, but also divides the data points by iris species using colors. This allows us to see the clusters that are present among the species.
 
@@ -142,7 +148,7 @@ plot_ly(data = iris,  # Data
 ```
 
 <div class="plotly html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-1" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-1">{"x":{"visdat":{"1ec872446e5":["function () ","plotlyVisDat"]},"cur_data":"1ec872446e5","attrs":{"1ec872446e5":{"x":{},"y":{},"z":{},"mode":"markers","color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter3d"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"scene":{"xaxis":{"title":"Sepal length"},"yaxis":{"title":"Petal length"},"zaxis":{"title":"Petal width"}},"hovermode":"closest","showlegend":true},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[5.1,4.9,4.7,4.6,5,5.4,4.6,5,4.4,4.9,5.4,4.8,4.8,4.3,5.8,5.7,5.4,5.1,5.7,5.1,5.4,5.1,4.6,5.1,4.8,5,5,5.2,5.2,4.7,4.8,5.4,5.2,5.5,4.9,5,5.5,4.9,4.4,5.1,5,4.5,4.4,5,5.1,4.8,5.1,4.6,5.3,5],"y":[1.4,1.4,1.3,1.5,1.4,1.7,1.4,1.5,1.4,1.5,1.5,1.6,1.4,1.1,1.2,1.5,1.3,1.4,1.7,1.5,1.7,1.5,1,1.7,1.9,1.6,1.6,1.5,1.4,1.6,1.6,1.5,1.5,1.4,1.5,1.2,1.3,1.4,1.3,1.5,1.3,1.3,1.3,1.6,1.9,1.4,1.6,1.4,1.5,1.4],"z":[0.2,0.2,0.2,0.2,0.2,0.4,0.3,0.2,0.2,0.1,0.2,0.2,0.1,0.1,0.2,0.4,0.4,0.3,0.3,0.3,0.2,0.4,0.2,0.5,0.2,0.2,0.4,0.2,0.2,0.2,0.2,0.4,0.1,0.2,0.2,0.2,0.2,0.1,0.2,0.2,0.3,0.3,0.2,0.6,0.4,0.3,0.2,0.2,0.2,0.2],"mode":"markers","type":"scatter3d","name":"setosa","marker":{"color":"rgba(102,194,165,1)","line":{"color":"rgba(102,194,165,1)"}},"textfont":{"color":"rgba(102,194,165,1)"},"error_y":{"color":"rgba(102,194,165,1)"},"error_x":{"color":"rgba(102,194,165,1)"},"line":{"color":"rgba(102,194,165,1)"},"frame":null},{"x":[7,6.4,6.9,5.5,6.5,5.7,6.3,4.9,6.6,5.2,5,5.9,6,6.1,5.6,6.7,5.6,5.8,6.2,5.6,5.9,6.1,6.3,6.1,6.4,6.6,6.8,6.7,6,5.7,5.5,5.5,5.8,6,5.4,6,6.7,6.3,5.6,5.5,5.5,6.1,5.8,5,5.6,5.7,5.7,6.2,5.1,5.7],"y":[4.7,4.5,4.9,4,4.6,4.5,4.7,3.3,4.6,3.9,3.5,4.2,4,4.7,3.6,4.4,4.5,4.1,4.5,3.9,4.8,4,4.9,4.7,4.3,4.4,4.8,5,4.5,3.5,3.8,3.7,3.9,5.1,4.5,4.5,4.7,4.4,4.1,4,4.4,4.6,4,3.3,4.2,4.2,4.2,4.3,3,4.1],"z":[1.4,1.5,1.5,1.3,1.5,1.3,1.6,1,1.3,1.4,1,1.5,1,1.4,1.3,1.4,1.5,1,1.5,1.1,1.8,1.3,1.5,1.2,1.3,1.4,1.4,1.7,1.5,1,1.1,1,1.2,1.6,1.5,1.6,1.5,1.3,1.3,1.3,1.2,1.4,1.2,1,1.3,1.2,1.3,1.3,1.1,1.3],"mode":"markers","type":"scatter3d","name":"versicolor","marker":{"color":"rgba(252,141,98,1)","line":{"color":"rgba(252,141,98,1)"}},"textfont":{"color":"rgba(252,141,98,1)"},"error_y":{"color":"rgba(252,141,98,1)"},"error_x":{"color":"rgba(252,141,98,1)"},"line":{"color":"rgba(252,141,98,1)"},"frame":null},{"x":[6.3,5.8,7.1,6.3,6.5,7.6,4.9,7.3,6.7,7.2,6.5,6.4,6.8,5.7,5.8,6.4,6.5,7.7,7.7,6,6.9,5.6,7.7,6.3,6.7,7.2,6.2,6.1,6.4,7.2,7.4,7.9,6.4,6.3,6.1,7.7,6.3,6.4,6,6.9,6.7,6.9,5.8,6.8,6.7,6.7,6.3,6.5,6.2,5.9],"y":[6,5.1,5.9,5.6,5.8,6.6,4.5,6.3,5.8,6.1,5.1,5.3,5.5,5,5.1,5.3,5.5,6.7,6.9,5,5.7,4.9,6.7,4.9,5.7,6,4.8,4.9,5.6,5.8,6.1,6.4,5.6,5.1,5.6,6.1,5.6,5.5,4.8,5.4,5.6,5.1,5.1,5.9,5.7,5.2,5,5.2,5.4,5.1],"z":[2.5,1.9,2.1,1.8,2.2,2.1,1.7,1.8,1.8,2.5,2,1.9,2.1,2,2.4,2.3,1.8,2.2,2.3,1.5,2.3,2,2,1.8,2.1,1.8,1.8,1.8,2.1,1.6,1.9,2,2.2,1.5,1.4,2.3,2.4,1.8,1.8,2.1,2.4,2.3,1.9,2.3,2.5,2.3,1.9,2,2.3,1.8],"mode":"markers","type":"scatter3d","name":"virginica","marker":{"color":"rgba(141,160,203,1)","line":{"color":"rgba(141,160,203,1)"}},"textfont":{"color":"rgba(141,160,203,1)"},"error_y":{"color":"rgba(141,160,203,1)"},"error_x":{"color":"rgba(141,160,203,1)"},"line":{"color":"rgba(141,160,203,1)"},"frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"visdat":{"324c3a7b42e3":["function () ","plotlyVisDat"]},"cur_data":"324c3a7b42e3","attrs":{"324c3a7b42e3":{"x":{},"y":{},"z":{},"mode":"markers","color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter3d"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"scene":{"xaxis":{"title":"Sepal length"},"yaxis":{"title":"Petal length"},"zaxis":{"title":"Petal width"}},"hovermode":"closest","showlegend":true},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[5.1,4.9,4.7,4.6,5,5.4,4.6,5,4.4,4.9,5.4,4.8,4.8,4.3,5.8,5.7,5.4,5.1,5.7,5.1,5.4,5.1,4.6,5.1,4.8,5,5,5.2,5.2,4.7,4.8,5.4,5.2,5.5,4.9,5,5.5,4.9,4.4,5.1,5,4.5,4.4,5,5.1,4.8,5.1,4.6,5.3,5],"y":[1.4,1.4,1.3,1.5,1.4,1.7,1.4,1.5,1.4,1.5,1.5,1.6,1.4,1.1,1.2,1.5,1.3,1.4,1.7,1.5,1.7,1.5,1,1.7,1.9,1.6,1.6,1.5,1.4,1.6,1.6,1.5,1.5,1.4,1.5,1.2,1.3,1.4,1.3,1.5,1.3,1.3,1.3,1.6,1.9,1.4,1.6,1.4,1.5,1.4],"z":[0.2,0.2,0.2,0.2,0.2,0.4,0.3,0.2,0.2,0.1,0.2,0.2,0.1,0.1,0.2,0.4,0.4,0.3,0.3,0.3,0.2,0.4,0.2,0.5,0.2,0.2,0.4,0.2,0.2,0.2,0.2,0.4,0.1,0.2,0.2,0.2,0.2,0.1,0.2,0.2,0.3,0.3,0.2,0.6,0.4,0.3,0.2,0.2,0.2,0.2],"mode":"markers","type":"scatter3d","name":"setosa","marker":{"color":"rgba(102,194,165,1)","line":{"color":"rgba(102,194,165,1)"}},"textfont":{"color":"rgba(102,194,165,1)"},"error_y":{"color":"rgba(102,194,165,1)"},"error_x":{"color":"rgba(102,194,165,1)"},"line":{"color":"rgba(102,194,165,1)"},"frame":null},{"x":[7,6.4,6.9,5.5,6.5,5.7,6.3,4.9,6.6,5.2,5,5.9,6,6.1,5.6,6.7,5.6,5.8,6.2,5.6,5.9,6.1,6.3,6.1,6.4,6.6,6.8,6.7,6,5.7,5.5,5.5,5.8,6,5.4,6,6.7,6.3,5.6,5.5,5.5,6.1,5.8,5,5.6,5.7,5.7,6.2,5.1,5.7],"y":[4.7,4.5,4.9,4,4.6,4.5,4.7,3.3,4.6,3.9,3.5,4.2,4,4.7,3.6,4.4,4.5,4.1,4.5,3.9,4.8,4,4.9,4.7,4.3,4.4,4.8,5,4.5,3.5,3.8,3.7,3.9,5.1,4.5,4.5,4.7,4.4,4.1,4,4.4,4.6,4,3.3,4.2,4.2,4.2,4.3,3,4.1],"z":[1.4,1.5,1.5,1.3,1.5,1.3,1.6,1,1.3,1.4,1,1.5,1,1.4,1.3,1.4,1.5,1,1.5,1.1,1.8,1.3,1.5,1.2,1.3,1.4,1.4,1.7,1.5,1,1.1,1,1.2,1.6,1.5,1.6,1.5,1.3,1.3,1.3,1.2,1.4,1.2,1,1.3,1.2,1.3,1.3,1.1,1.3],"mode":"markers","type":"scatter3d","name":"versicolor","marker":{"color":"rgba(252,141,98,1)","line":{"color":"rgba(252,141,98,1)"}},"textfont":{"color":"rgba(252,141,98,1)"},"error_y":{"color":"rgba(252,141,98,1)"},"error_x":{"color":"rgba(252,141,98,1)"},"line":{"color":"rgba(252,141,98,1)"},"frame":null},{"x":[6.3,5.8,7.1,6.3,6.5,7.6,4.9,7.3,6.7,7.2,6.5,6.4,6.8,5.7,5.8,6.4,6.5,7.7,7.7,6,6.9,5.6,7.7,6.3,6.7,7.2,6.2,6.1,6.4,7.2,7.4,7.9,6.4,6.3,6.1,7.7,6.3,6.4,6,6.9,6.7,6.9,5.8,6.8,6.7,6.7,6.3,6.5,6.2,5.9],"y":[6,5.1,5.9,5.6,5.8,6.6,4.5,6.3,5.8,6.1,5.1,5.3,5.5,5,5.1,5.3,5.5,6.7,6.9,5,5.7,4.9,6.7,4.9,5.7,6,4.8,4.9,5.6,5.8,6.1,6.4,5.6,5.1,5.6,6.1,5.6,5.5,4.8,5.4,5.6,5.1,5.1,5.9,5.7,5.2,5,5.2,5.4,5.1],"z":[2.5,1.9,2.1,1.8,2.2,2.1,1.7,1.8,1.8,2.5,2,1.9,2.1,2,2.4,2.3,1.8,2.2,2.3,1.5,2.3,2,2,1.8,2.1,1.8,1.8,1.8,2.1,1.6,1.9,2,2.2,1.5,1.4,2.3,2.4,1.8,1.8,2.1,2.4,2.3,1.9,2.3,2.5,2.3,1.9,2,2.3,1.8],"mode":"markers","type":"scatter3d","name":"virginica","marker":{"color":"rgba(141,160,203,1)","line":{"color":"rgba(141,160,203,1)"}},"textfont":{"color":"rgba(141,160,203,1)"},"error_y":{"color":"rgba(141,160,203,1)"},"error_x":{"color":"rgba(141,160,203,1)"},"line":{"color":"rgba(141,160,203,1)"},"frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 
 This plot is very effective in showing us where our species place on the 3 variables, making it easier to gauge how close/apart they are clustered. We can, for example, see that the setosa data is in a quite isolated cluster, while versicolor and virginica, although also in quite clear clusters, show a slight overlap. These distinguishing clusters are a good sign for when we want to do our machine learning later as they will hopefully help our model in making good predictions.
 
@@ -163,7 +169,7 @@ ggplot(
             x = 'Species', y = 'Sepal width')  # Assign a title, axis names.
 ```
 
-<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" />
+<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-7-1.png" width="672" />
 
 From this box plot it can be seen that the *setosa* species has a higher sepal width median and interquartile range compared to the other two species. In contrast, the Versicolor and Virginica show quite a bit of overlap with each other in term of their interquartile range. This will make it harder for a machine learning algorithm to distinguish between the two species levels when predicting using this variable.
 
@@ -182,7 +188,7 @@ ggplot(data = iris, mapping = aes(x = Species, y = Sepal.Length, fill = Species)
             x = 'Species', y = 'Sepal length')
 ```
 
-<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" />
+<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-8-1.png" width="672" />
 
 The ranges of the three species seem to somewhat overlap on the sepal length variable. However, their medians seem like they differ (at least visually. We don’t know if they’re statistically significantly different–we could test for this, but it is not necessary for the purposes of this kernel).
 
@@ -201,7 +207,7 @@ ggplot(data = iris, mapping = aes(x = Species, y = Petal.Width, fill = Species))
             x = 'Species', y = 'Petal width')
 ```
 
-<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" />
+<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-9-1.png" width="672" />
 
 This box plot seems to indicate quite a difference in petal width between the species.
 
@@ -220,7 +226,7 @@ ggplot(data = iris, mapping = aes(x = Species, y = Petal.Length, fill = Species)
             x = 'Species', y = 'Petal length')
 ```
 
-<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" />
+<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-10-1.png" width="672" />
 
 This plot seems to indicate that the three species vary in terms of interquartile range on petal length. The setosa seems to have a very narrow interquartile range and have quite a lot shorter petal length compared to the other two species.
 
@@ -318,7 +324,7 @@ ggplot(data = dt_importance, mapping = aes(x = dt_importance[,1])) + # Data & ma
   theme_light() # Theme
 ```
 
-<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-17-1.png" width="672" style="display: block; margin: auto;" />
+<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-17-1.png" width="672" />
 This table gives us a very informative overview of the importance of each variable in predicting the species.
 
 Now lets plot the decision tree using `fancyRpartPlot()` from the RATTLE package. This will give us clear insight into how the model makes its predictions.
@@ -327,7 +333,7 @@ Now lets plot the decision tree using `fancyRpartPlot()` from the RATTLE package
 fancyRpartPlot(dt_model$finalModel, sub = '')
 ```
 
-<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-18-1.png" width="672" style="display: block; margin: auto;" />
+<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-18-1.png" width="672" />
 
 This decision tree tells us that:
 
@@ -414,7 +420,7 @@ ggplot(data = rf_importance, mapping = aes(x = rf_importance[,1])) + # Data & ma
   theme_light() # Theme
 ```
 
-<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-23-1.png" width="672" style="display: block; margin: auto;" />
+<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-23-1.png" width="672" />
 This plot tells us that petal length and width are the most important variable for prediction in our model.
 
 Now, lets check the predicted accuracy of the random forest model by running it on resamples of our *train data*. Later we will test the accuracy of the model by running a prediction on our *test data*, which is data our model has not seen before.
@@ -531,7 +537,7 @@ ggplot(data = nb_importance, mapping = aes(x = nb_importance[,1])) + # Data & ma
   theme_light() # Theme
 ```
 
-<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-30-1.png" width="672" style="display: block; margin: auto;" />
+<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-30-1.png" width="672" />
 This table gives us a very informative overview of the importance of each variable in predicting each species. We can see that petal width and length are the two most important variables for predicting each species.
 
 #### PREDICTION: Naive Bayes Model
@@ -626,7 +632,7 @@ ggplot(data = svm_importance, mapping = aes(x = svm_importance[,1])) + # Data & 
   theme_light() # Theme
 ```
 
-<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-36-1.png" width="672" style="display: block; margin: auto;" />
+<img src="/post/xgboost/a-beginner-s-guide-to-machine-learning-with-r_files/figure-html/unnamed-chunk-36-1.png" width="672" />
 This table gives us a very informative overview of the importance of each variable in predicting each species. We can see that petal length and petal width are the two most important variables for predicting each species.
 
 #### PREDICTION: Support Vector Machine
