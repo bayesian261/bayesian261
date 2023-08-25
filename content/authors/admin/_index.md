@@ -1,5 +1,5 @@
 ---
-bio: My research interests include Data science,statistics,bayesian modeling,Machine learning and mathematical modeling.
+bio: My research interests include inferential statistics,Casual Inference,Public Health,Survival Analysis,Reproducible research,bayesian modeling,Machine learning and mathematical modeling.
 education:
   courses:
   - course: Bsc in Statistics 
@@ -15,10 +15,20 @@ highlight_name: true
 interests:
 - Bayesian Statistics
 - Data science
+- Reproducible workflows
 - Machine learning
 - Frequentist statistics
 - Survival analysis
 - Generalised linear and Additive models
+Teaching : 
+- Reproducible Workflows
+- Tidymodels
+- Statistics
+- Mathematics
+- Ordinary Differential Equations
+- Rmarkdown
+- Tidyverse
+     
 last_name: Ncube
 organizations:
 - name: Neat Elite Research and Data Analytics Consultancy

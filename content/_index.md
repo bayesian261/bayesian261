@@ -10,11 +10,11 @@ sections:
 - block: features
   content:
     items:
-    - description: 90%
+    - description: 100%
       icon: r-project
       icon_pack: fab
       name: R
-    - description: 100%
+    - description: 80%
       icon: chart-line
       icon_pack: fas
       name: Statistics
@@ -30,8 +30,20 @@ sections:
       icon: python
       icon_pack: fab
       name: python
+    - description: 70%
+      icon: database
+      icon_pack: fa
+      name: SQL
+    - description: 70%
+      icon: pie-chart
+      icon_pack: fa
+      name: Data Visualisation
+    - description: 70%
+      icon: file-excel
+      icon_pack: fa
+      name: Excel
       
-    title: Skills
+      title: Skills
 - block: experience
   content:
     date_format: Jan 2006
@@ -53,7 +65,11 @@ sections:
       company_url: ""
       date_end: "2024-01-01"
       date_start: "2023-07-01"
-      description: Analysed public health data
+      description: |2-
+          Responsibilities include:
+          * Analysing Public Health data
+          * statistical modeling
+          * Code Review
       location: Harare
       title: Public Health Evaluation consultant
     title: Experience
