@@ -269,7 +269,7 @@ corrs = cor(stock)
 corrplot(corrs, type="upper", method="color", addCoef.col = "black")
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-5-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-5-1.png" width="1023.999552" />
 
 # PCA with covariance
 
@@ -468,7 +468,7 @@ pc<-pca_estimates |>
 pc
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-14-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-14-1.png" width="1023.999552" />
 
 #
 
@@ -490,7 +490,7 @@ pd<-features_2d |>
 pd
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-15-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-15-1.png" width="1023.999552" />
 
 
 # using factoextra
@@ -523,7 +523,7 @@ fviz_screeplot(components, addlabels = TRUE, ylim = c(0, 36))+
   labs(title='Figure 11. Proportion of Variance Explained by Individual PCA Components (Dimensions)')
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-17-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-17-1.png" width="1023.999552" />
 
 
 # assess variable importance to each if the first 4 components (dim)
@@ -542,7 +542,7 @@ v4<-fviz_contrib(components, choice = "var", axes = 4, top = 10, title='Figure 1
 v1|v2
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-19-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-19-1.png" width="1023.999552" />
 
 #
 
@@ -550,7 +550,7 @@ v1|v2
 v3|v4
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-20-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-20-1.png" width="1023.999552" />
 
 #
 
@@ -560,7 +560,7 @@ fviz_pca_var(components, alpha.var = "contrib", col.var = "contrib", # Color by 
              title = 'Figure 16. Influence of Variables on PCA1 and PCA2', repel = TRUE )
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-21-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-21-1.png" width="1023.999552" />
 
 #
 
@@ -571,7 +571,7 @@ fviz_pca_ind(components,col.ind = "contrib", gradient.cols = c("#00AFBB", "#E7B8
              repel = TRUE)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-22-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-22-1.png" width="1023.999552" />
 
 #
 
@@ -581,7 +581,7 @@ fviz_pca_ind(components, col.ind = "cos2", gradient.cols = c("#00AFBB", "#E7B800
              repel = TRUE)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-23-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-23-1.png" width="1023.999552" />
 
 #
 
@@ -592,7 +592,7 @@ fviz_pca_biplot(components, repel = TRUE,
                 col.var = "#2E9FDF",col.ind = "#696969")
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-24-1.png" width="1023.999552" />
+<img src="staticunnamed-chunk-24-1.png" width="1023.999552" />
 
 
 
