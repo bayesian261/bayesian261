@@ -1,19 +1,19 @@
 ---
 title: 'Understanding why learning SQL and R can be fun : Comparison between the two'
-author: Bongani Ncube
-date: '2023-08-26'
-slug: understanding-why-learning-sql-and-r-can-be-fun-comparison-between-the-two
+author: "Bongani Ncube"
+date: "2023-08-26"
+slug: "understanding-why-learning-sql-and-r-can-be-fun-comparison-between-the-two"
 categories:
-  - R
-  - dplyr
+- R
+- dplyr
 tags: []
 subtitle: ''
 summary: ''
 authors: []
-lastmod: '2023-08-26T13:42:36+02:00'
+lastmod: "2023-08-26T13:42:36+02:00"
 featured: no
 image:
-  caption: 'art by Allison Host'
+  caption: art by Allison Host
   focal_point: ''
   preview_only: no
 projects: []
@@ -99,7 +99,14 @@ copy_to(con,data2)
 
 # Sql queries in R and dplyr code 
 
++ A *query* is a request for data from a database table (or combination of tables). 
++ Querying is an essential skill for a data scientist, since the data you need for your analyses will often live in databases.
+
 ## Selecting all data in SQL
+
++ In SQL, you can select data from a table using a *SELECT* statement. For example, the following query selects the name column from the people table:
+`SELECT name FROM people;`
++ you may want to select all columns from a table use `*` rather than typing all the columns
 
 ```{r}
 dbGetQuery(con,'SELECT * FROM data2')
@@ -127,6 +134,18 @@ data2 |>
 
 
 ## filtering using `WHERE` in SQL
+
++ *WHERE* is a filtering clause
++ In SQL, the WHERE keyword allows you to filter based on both text and numeric values in a table. There are a few different comparison operators you can use:
+
++ _= equal_
++ _<> not equal_
++ _< less than_
++ _> greater than_
++ _<= less than or equal to_
++ _>= greater than or equal to_
+
++ You can build up your WHERE queries by combining multiple conditions with the _AND_ keyword.
 
 ```{r}
 dbGetQuery(con,"SELECT * 
@@ -158,7 +177,9 @@ data2 |>
 
 ## `COUNT` and `AS` alias in SQL
 
++ The *COUNT* statement lets you count then returning the number of rows in one or more columns.
 + we use `AS` to rename default name 
++ `COUNT(*)` tells you how many rows are in a table
 
 ```{r}
 dbGetQuery(con,"SELECT COUNT(*) AS n FROM data2")
@@ -230,6 +251,7 @@ data2 |>
 
 ## Missing data in SQL
 
++n SQL, NULL represents a missing or unknown value. You can check for NULL values using the expression IS NULL
 + Use `IS NULL` AND `IS NOT NULL`
 
 ```{r}
@@ -261,6 +283,7 @@ data2 |>
 
 # How many categories do we have
 ## select `distinct` items in SQL
++ Often your results will include many duplicate values. If you want to select all the unique values from a column, you can use the *DISTINCT* keyword.
 
 ```{r}
 dbGetQuery(con,"SELECT COUNT(DISTINCT category) AS unique_categories 
@@ -305,6 +328,12 @@ data2 |>
 ## filtering text data in SQL
 
 + use `LIKE`
++ the _LIKE_ operator can be used in a WHERE clause to search for a pattern in a column. 
++ To accomplish this, you use something called a wildcard as a placeholder for some other values. There are two wildcards you can use with LIKE:
+
+> The % wildcard will match zero, one, or many characters in text
+
+> The _ wildcard will match a single character
 
 ```{r}
 dbGetQuery(con,"SELECT * 
@@ -321,13 +350,67 @@ data2 |>
   filter(str_like(category,"Chicken%"))
 ```
 
+## Aggregate functions in SQL
+
+```{r}
+sqldf::sqldf("SELECT AVG(sugar) AS avg_sugar,
+                       MAX(sugar) AS max_sugar,
+                       MIN(sugar) AS min_sugar
+                FROM data2;") 
+```
+## Aggregate functions in R
+
+```{r}
+data2 |> 
+  summarise(avg_sugar=mean(sugar,na.rm=T),
+            max_sugar= max(sugar,na.rm=T),
+            min_sugar= min(sugar,na.rm=T))
+```
+# Grouping and aggregating in SQL
+
+```{r}
+sqldf::sqldf("SELECT category,AVG(sugar) AS avg_sugar,
+                       MAX(sugar) AS max_sugar,
+                       MIN(sugar) AS min_sugar
+                FROM data2
+                GROUP BY category;") 
+```
+
+## group and Aggregate functions in R
+
+```{r}
+data2 |>
+  group_by(category) |> 
+  summarise(avg_sugar=mean(sugar,na.rm=T),
+            max_sugar= max(sugar,na.rm=T),
+            min_sugar= min(sugar,na.rm=T))
+```
+## Basic arithmetic
+
++ In addition to using aggregate functions, you can perform basic arithmetic with symbols like _+, -, *, and /_.
++ lets create weird variables here
+
+```{r}
+sqldf::sqldf("SELECT category,(sugar-protein) AS diff_sugar_protein 
+                FROM data2")
+```
+
+## basic arithmetic in R using `mutate()`
+
+```{r}
+data2 |> 
+  mutate(diff_sugar_protein=sugar-protein) |> 
+  select(category,diff_sugar_protein)
+```
+
+
 # SQL subqueries
 
 + use data1 and data2 databases for this task
 + the following is just an example and calories in data2 and data1 are the same so the result is the same
 
 ```{r}
-dbGetQuery(con,"SELECT recipe,sugar,calories 
+sqldf::sqldf("SELECT recipe,calories
                 FROM data2 
                 WHERE calories > 
                           (SELECT AVG(calories) FROM data1)")
@@ -357,7 +440,7 @@ data2 |>
 When talking about inner joins, we are only going to keep an observation if it is found in all of the tables we're combining.
 
 ```{r}
-dbGetQuery(con,"SELECT data2.category,data2.recipe,data2.calories,
+sqldf::sqldf("SELECT data2.category,data2.recipe,data2.calories,
                        carbohydrate,protein,sugar 
                 FROM data2
                 INNER JOIN data1 ON data2.recipe=data1.recipe")
@@ -405,7 +488,7 @@ dbGetQuery(join,"SELECT * FROM join_df2")
 For a left join, all rows in the first table specified will be included in the output. Any row in the second table that is *not* in the first table will not be included. 
 
 ```{r}
-dbGetQuery(join,"SELECT * 
+sqldf::sqldf("SELECT * 
                  FROM join_df1
                  LEFT JOIN join_df2
                  USING(A)")
@@ -417,7 +500,7 @@ Right Join is similar to what we just discussed; however, in the output from a r
 
 
 ```{r}
-dbGetQuery(join,"SELECT * 
+sqldf::sqldf("SELECT * 
                  FROM join_df1
                  RIGHT JOIN join_df2
                  USING(A)")
@@ -442,7 +525,7 @@ Finally, a full join will take every observation from every table and include it
 
 
 ```{r}
-dbGetQuery(join,"SELECT * FROM join_df1 
+sqldf::sqldf("SELECT * FROM join_df1 
                  FULL JOIN join_df2
                  USING(A)")
 ```

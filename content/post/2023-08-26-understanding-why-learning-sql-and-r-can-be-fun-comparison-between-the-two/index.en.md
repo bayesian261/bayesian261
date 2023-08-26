@@ -1,19 +1,19 @@
 ---
 title: 'Understanding why learning SQL and R can be fun : Comparison between the two'
-author: Bongani Ncube
-date: '2023-08-26'
-slug: understanding-why-learning-sql-and-r-can-be-fun-comparison-between-the-two
+author: "Bongani Ncube"
+date: "2023-08-26"
+slug: "understanding-why-learning-sql-and-r-can-be-fun-comparison-between-the-two"
 categories:
-  - R
-  - dplyr
+- R
+- dplyr
 tags: []
 subtitle: ''
 summary: ''
 authors: []
-lastmod: '2023-08-26T13:42:36+02:00'
+lastmod: "2023-08-26T13:42:36+02:00"
 featured: no
 image:
-  caption: 'art by Allison Host'
+  caption: art by Allison Host
   focal_point: ''
   preview_only: no
 projects: []
@@ -73,7 +73,14 @@ copy_to(con,data2)
 
 # Sql queries in R and dplyr code 
 
++ A *query* is a request for data from a database table (or combination of tables). 
++ Querying is an essential skill for a data scientist, since the data you need for your analyses will often live in databases.
+
 ## Selecting all data in SQL
+
++ In SQL, you can select data from a table using a *SELECT* statement. For example, the following query selects the name column from the people table:
+`SELECT name FROM people;`
++ you may want to select all columns from a table use `*` rather than typing all the columns
 
 
 ```r
@@ -186,6 +193,18 @@ data2 |>
 
 ## filtering using `WHERE` in SQL
 
++ *WHERE* is a filtering clause
++ In SQL, the WHERE keyword allows you to filter based on both text and numeric values in a table. There are a few different comparison operators you can use:
+
++ _= equal_
++ _<> not equal_
++ _< less than_
++ _> greater than_
++ _<= less than or equal to_
++ _>= greater than or equal to_
+
++ You can build up your WHERE queries by combining multiple conditions with the _AND_ keyword.
+
 
 ```r
 dbGetQuery(con,"SELECT * 
@@ -240,7 +259,9 @@ data2 |>
 
 ## `COUNT` and `AS` alias in SQL
 
++ The *COUNT* statement lets you count then returning the number of rows in one or more columns.
 + we use `AS` to rename default name 
++ `COUNT(*)` tells you how many rows are in a table
 
 
 ```r
@@ -368,6 +389,7 @@ data2 |>
 
 ## Missing data in SQL
 
++n SQL, NULL represents a missing or unknown value. You can check for NULL values using the expression IS NULL
 + Use `IS NULL` AND `IS NOT NULL`
 
 
@@ -449,6 +471,7 @@ data2 |>
 
 # How many categories do we have
 ## select `distinct` items in SQL
++ Often your results will include many duplicate values. If you want to select all the unique values from a column, you can use the *DISTINCT* keyword.
 
 
 ```r
@@ -517,6 +540,12 @@ data2 |>
 ## filtering text data in SQL
 
 + use `LIKE`
++ the _LIKE_ operator can be used in a WHERE clause to search for a pattern in a column. 
++ To accomplish this, you use something called a wildcard as a placeholder for some other values. There are two wildcards you can use with LIKE:
+
+> The % wildcard will match zero, one, or many characters in text
+
+> The _ wildcard will match a single character
 
 
 ```r
@@ -549,6 +578,136 @@ data2 |>
 #> 5 117         NA  NA       NA   Chicken Breast
 ```
 
+## Aggregate functions in SQL
+
+
+```r
+sqldf::sqldf("SELECT AVG(sugar) AS avg_sugar,
+                       MAX(sugar) AS max_sugar,
+                       MIN(sugar) AS min_sugar
+                FROM data2;") 
+#>   avg_sugar max_sugar min_sugar
+#> 1  11.24864     86.97      0.07
+```
+## Aggregate functions in R
+
+
+```r
+data2 |> 
+  summarise(avg_sugar=mean(sugar,na.rm=T),
+            max_sugar= max(sugar,na.rm=T),
+            min_sugar= min(sugar,na.rm=T))
+#> # A tibble: 1 x 3
+#>   avg_sugar max_sugar min_sugar
+#>       <dbl>     <dbl>     <dbl>
+#> 1      11.2      87.0      0.07
+```
+# Grouping and aggregating in SQL
+
+
+```r
+sqldf::sqldf("SELECT category,AVG(sugar) AS avg_sugar,
+                       MAX(sugar) AS max_sugar,
+                       MIN(sugar) AS min_sugar
+                FROM data2
+                GROUP BY category;") 
+#>          category  avg_sugar max_sugar min_sugar
+#> 1       Beverages  9.8000000      9.80      9.80
+#> 2       Breakfast  5.1600000     11.13      2.25
+#> 3         Chicken  1.1400000      1.34      0.94
+#> 4  Chicken Breast  1.8300000      1.83      1.83
+#> 5         Dessert 69.5700000     86.97     52.17
+#> 6            Meat 13.5525000     30.06      5.21
+#> 7   One Dish Meal  3.9066667      6.09      1.46
+#> 8            Pork  4.6200000      4.62      4.62
+#> 9          Potato  0.8100000      0.81      0.81
+#> 10      Vegetable  0.8066667      1.96      0.07
+```
+
+## group and Aggregate functions in R
+
+
+```r
+data2 |>
+  group_by(category) |> 
+  summarise(avg_sugar=mean(sugar,na.rm=T),
+            max_sugar= max(sugar,na.rm=T),
+            min_sugar= min(sugar,na.rm=T))
+#> # A tibble: 10 x 4
+#>    category       avg_sugar max_sugar min_sugar
+#>    <chr>              <dbl>     <dbl>     <dbl>
+#>  1 Beverages          9.8        9.8       9.8 
+#>  2 Breakfast          5.16      11.1       2.25
+#>  3 Chicken            1.14       1.34      0.94
+#>  4 Chicken Breast     1.83       1.83      1.83
+#>  5 Dessert           69.6       87.0      52.2 
+#>  6 Meat              13.6       30.1       5.21
+#>  7 One Dish Meal      3.91       6.09      1.46
+#>  8 Pork               4.62       4.62      4.62
+#>  9 Potato             0.81       0.81      0.81
+#> 10 Vegetable          0.807      1.96      0.07
+```
+## Basic arithmetic
+
++ In addition to using aggregate functions, you can perform basic arithmetic with symbols like _+, -, *, and /_.
++ lets create weird variables here
+
+
+```r
+sqldf::sqldf("SELECT category,(sugar-protein) AS diff_sugar_protein 
+                FROM data2")
+#>          category diff_sugar_protein
+#> 1          Potato              -8.26
+#> 2       Vegetable             -38.73
+#> 3         Dessert              82.48
+#> 4       Breakfast             -48.64
+#> 5         Dessert                 NA
+#> 6            Meat              -9.46
+#> 7  Chicken Breast                 NA
+#> 8         Chicken             -50.56
+#> 9         Chicken             -53.06
+#> 10      Beverages               8.98
+#> 11      Vegetable              -7.48
+#> 12           Pork              -9.31
+#> 13  One Dish Meal             -28.62
+#> 14      Vegetable              -6.81
+#> 15      Breakfast               8.46
+#> 16           Meat             -94.43
+#> 17        Dessert              42.05
+#> 18      Breakfast             -21.53
+#> 19           Meat               5.34
+#> 20  One Dish Meal             -34.15
+#> 21  One Dish Meal             -24.27
+#> 22 Chicken Breast             -42.91
+#> 23 Chicken Breast                 NA
+#> 24           Meat            -101.88
+#> 25      Breakfast             -21.11
+```
+
+## basic arithmetic in R using `mutate()`
+
+
+```r
+data2 |> 
+  mutate(diff_sugar_protein=sugar-protein) |> 
+  select(category,diff_sugar_protein)
+#> # A tibble: 25 x 2
+#>    category       diff_sugar_protein
+#>    <chr>                       <dbl>
+#>  1 Potato                      -8.26
+#>  2 Vegetable                  -38.7 
+#>  3 Dessert                     82.5 
+#>  4 Breakfast                  -48.6 
+#>  5 Dessert                     NA   
+#>  6 Meat                        -9.46
+#>  7 Chicken Breast              NA   
+#>  8 Chicken                    -50.6 
+#>  9 Chicken                    -53.1 
+#> 10 Beverages                    8.98
+#> # i 15 more rows
+```
+
+
 # SQL subqueries
 
 + use data1 and data2 databases for this task
@@ -556,20 +715,20 @@ data2 |>
 
 
 ```r
-dbGetQuery(con,"SELECT recipe,sugar,calories 
+sqldf::sqldf("SELECT recipe,calories
                 FROM data2 
                 WHERE calories > 
                           (SELECT AVG(calories) FROM data1)")
-#>   recipe sugar calories
-#> 1    671  1.34   481.88
-#> 2    859  4.62   388.44
-#> 3    171  4.17   431.28
-#> 4    282  1.96   409.99
-#> 5    091 11.13   388.37
-#> 6    868 52.17   307.36
-#> 7    885  1.46   504.09
-#> 8    419  1.83  1830.28
-#> 9    639 10.76   321.95
+#>   recipe calories
+#> 1    671   481.88
+#> 2    859   388.44
+#> 3    171   431.28
+#> 4    282   409.99
+#> 5    091   388.37
+#> 6    868   307.36
+#> 7    885   504.09
+#> 8    419  1830.28
+#> 9    639   321.95
 ```
 
 + the above is the same as follows in R
@@ -610,7 +769,7 @@ When talking about inner joins, we are only going to keep an observation if it i
 
 
 ```r
-dbGetQuery(con,"SELECT data2.category,data2.recipe,data2.calories,
+sqldf::sqldf("SELECT data2.category,data2.recipe,data2.calories,
                        carbohydrate,protein,sugar 
                 FROM data2
                 INNER JOIN data1 ON data2.recipe=data1.recipe")
@@ -618,7 +777,7 @@ dbGetQuery(con,"SELECT data2.category,data2.recipe,data2.calories,
 #> 1          Potato    624   236.62         9.67    9.07  0.81
 #> 2       Vegetable    102   198.98        87.68   39.12  0.39
 #> 3         Dessert    427   187.41        19.12    4.49 86.97
-#> 4  Breakfast meal    324    49.50        66.64   53.33  4.69
+#> 4       Breakfast    324    49.50        66.64   53.33  4.69
 #> 5         Dessert    912       NA           NA      NA    NA
 #> 6            Meat    380    75.89        22.51   17.64  8.18
 #> 7  Chicken Breast    609       NA           NA      NA    NA
@@ -629,17 +788,17 @@ dbGetQuery(con,"SELECT data2.category,data2.recipe,data2.calories,
 #> 12           Pork    859   388.44        12.89   13.93  4.62
 #> 13  One Dish Meal    171   431.28        14.69   32.79  4.17
 #> 14      Vegetable    282   409.99        13.61    8.77  1.96
-#> 15 Breakfast meal    091   388.37        13.67    2.67 11.13
+#> 15      Breakfast    091   388.37        13.67    2.67 11.13
 #> 16           Meat    879    88.26        18.58   99.64  5.21
 #> 17        Dessert    868   307.36        31.39   10.12 52.17
-#> 18 Breakfast meal    598   212.40        19.20   23.78  2.25
+#> 18      Breakfast    598   212.40        19.20   23.78  2.25
 #> 19           Meat    929     5.87        47.91   24.72 30.06
 #> 20  One Dish Meal    439   151.88         7.41   40.24  6.09
 #> 21  One Dish Meal    885   504.09        32.76   25.73  1.46
 #> 22 Chicken Breast    419  1830.28         3.92   44.74  1.83
 #> 23 Chicken Breast    117       NA           NA      NA    NA
 #> 24           Meat    639   321.95         1.41  112.64 10.76
-#> 25 Breakfast meal    526    93.50        39.28   23.68  2.57
+#> 25      Breakfast    526    93.50        39.28   23.68  2.57
 ```
 
 ## Inner join in R
@@ -720,7 +879,7 @@ For a left join, all rows in the first table specified will be included in the o
 
 
 ```r
-dbGetQuery(join,"SELECT * 
+sqldf::sqldf("SELECT * 
                  FROM join_df1
                  LEFT JOIN join_df2
                  USING(A)")
@@ -742,7 +901,7 @@ Right Join is similar to what we just discussed; however, in the output from a r
 
 
 ```r
-dbGetQuery(join,"SELECT * 
+sqldf::sqldf("SELECT * 
                  FROM join_df1
                  RIGHT JOIN join_df2
                  USING(A)")
@@ -795,7 +954,7 @@ Finally, a full join will take every observation from every table and include it
 
 
 ```r
-dbGetQuery(join,"SELECT * FROM join_df1 
+sqldf::sqldf("SELECT * FROM join_df1 
                  FULL JOIN join_df2
                  USING(A)")
 #>        A  B  C  D
