@@ -10,23 +10,27 @@ sections:
 - block: features
   content:
     items:
-    - description: 100%
+    - description: 110%
       icon: r-project
       icon_pack: fab
       name: R
-    - description: 80%
+    - description: 90%
       icon: chart-line
       icon_pack: fas
-      name: Statistics
-    - description: 80%
+      name: Statistics and modeling
+    - description: 90%
       icon: calculator
       icon_pack: fas
       name: Mathematics
+    - description: 90%
+      icon: dashboard
+      icon_pack: fa
+      name: Time to event studies
     - description: 80%
       icon: atom
       icon_pack: fas
       name: Machine Learning
-    - description: 50%
+    - description: 70%
       icon: python
       icon_pack: fab
       name: python
@@ -34,11 +38,11 @@ sections:
       icon: database
       icon_pack: fa
       name: SQL
-    - description: 70%
+    - description: 80%
       icon: pie-chart
       icon_pack: fa
       name: Data Visualisation
-    - description: 70%
+    - description: 80%
       icon: file-excel
       icon_pack: fa
       name: Excel
@@ -48,8 +52,25 @@ sections:
   content:
     date_format: Jan 2006
     items:
-    - company: MartDat Analytics inc.
+    - company: Neat Elite Research and Data Analytics Consultancy inc.
       company_logo: org-gc
+      company_url: ""
+      date_end: ""
+      date_start: "2022-01-01"
+      description: |2-
+           Responsibilities include: 
+           * Reproducible Workflows
+           * Tidymodels instructor
+           * Statistics tutor
+           * Mathematics tutor
+           * Statistical modeling
+           * Data wrangling and munging
+           * Ordinary Differential Equations (ND/NC)
+           * Rmarkdown/Quarto
+           * Tidyverse instructor
+      location: Harare
+      title: Freelancer
+    - company: MartDat Analytics inc.
       company_url: ""
       date_end: ""
       date_start: "2022-01-01"
