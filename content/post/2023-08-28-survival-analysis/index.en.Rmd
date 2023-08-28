@@ -31,8 +31,10 @@ knitr::opts_chunk$set(cache = TRUE,
                       echo = TRUE, 
                       message = FALSE, 
                       warning = FALSE,
+                      fig.path = "static",
                       fig.height=6, 
                       fig.width = 1.777777*6,
+                      fig.align='center',
                       tidy = FALSE, 
                       comment = NA, 
                       highlight = TRUE, 
@@ -55,9 +57,12 @@ insert_inc_bullet <- make_latex_decorator("> *", "*")
 insert_html_math <- make_latex_decorator("", "$$")
 ```
 
-This presentation will cover some basics of survival analysis, and the
-following series of tutorial papers can be helpful for additional
+# Introduction
+
+Hie there ,welcome back to one of my presentations ,This presentation will cover some basics of survival analysis, and the following series of tutorial papers can be helpful for additional
 reading:
+
+## further reading 
 
 > Clark, T., Bradburn, M., Love, S., & Altman, D. (2003). Survival
 > analysis part I: Basic concepts and first analyses. 232-238. ISSN
@@ -85,8 +90,6 @@ library(survminer)
 library(lubridate)
 library(ggsurvfit)
 library(gtsummary)
-#library(tidycmprsk)
-#library(condsurv)
 library(tidyverse)
 ```
 
