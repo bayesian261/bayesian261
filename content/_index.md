@@ -13,7 +13,7 @@ sections:
     - description: 110%
       icon: r-project
       icon_pack: fab
-      name: R
+      name: R/Tidyverse/Tidymodels
     - description: 90%
       icon: chart-line
       icon_pack: fas
@@ -37,7 +37,7 @@ sections:
     - description: 70%
       icon: database
       icon_pack: fa
-      name: SQL
+      name: MYSQL
     - description: 80%
       icon: pie-chart
       icon_pack: fa
@@ -46,7 +46,6 @@ sections:
       icon: file-excel
       icon_pack: fa
       name: Excel
-      
       title: Skills
 - block: experience
   content:

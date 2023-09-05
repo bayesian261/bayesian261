@@ -6,9 +6,9 @@
 # Appearance
 
 appearance:
-  theme_day: Coffee
+  theme_day: coffee
   theme_night: minimal
-  font: Rose
+  font: apogee
   font_size: L
 
 # SEO
@@ -18,7 +18,7 @@ marketing:
     site_type: Person
     local_business_type: ''
     org_name: ''
-    description: 'A highly-customizable Hugo academic resume theme powered by Wowchemy website builder.'
+    description: 'Bongani Ncube personal Website.'
     twitter: 'wowchemy'
   analytics:
     google_analytics: ''
@@ -33,6 +33,7 @@ marketing:
 
 header:
   navbar:
+    block: navbar
     enable: true
     align: l
     show_logo: true
@@ -66,7 +67,7 @@ features:
     theme_light: github-light
     theme_dark: dracula
   math:
-    enable: false
+    enable: true
   privacy_pack:
     enable: false
   repository:
