@@ -1,0 +1,343 @@
+---
+title: Generalised Linear Models 2
+author: Bongani Ncube
+date: '2023-09-09'
+slug: generalised-linear-models-2
+categories:
+  - classification
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-09-09T12:49:23+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+# Multinomial
+
+If we have more than two categories or groups that we want to model relative to covariates (e.g., we have observations $i = 1,\cdots,n$ and groups covariates $j = 1,\cdots,J$), multinomial is our candidate model
+
+Let
+
+-   $p_{ij}$ be the probability that the i-th observation belongs to the j-th group
+-   $Y_{ij}$ be the number of observations for individual i in group j; An individual will have observations $Y_{i1},Y_{i2},…Y_{iJ}$
+-   assume the probability of observing this response is given by a multinomial distribution in terms of probabilities $p_{ij}$, where $\sum_{j = 1}^J p_{ij} = 1$ . For interpretation, we have a baseline category $p_{i1} = 1 - \sum_{j = 2}^J p_{ij}$
+
+#
+The link between the mean response (probability) $p_{ij}$ and a linear function of the covariates
+
+$$
+\eta_{ij} = \mathbf{x'_i \beta_j} = \log \frac{p_{ij}}{p_{i1}}, j = 2,..,J
+$$
+
+We compare $p_{ij}$ to the baseline $p_{i1}$, suggesting
+
+$$
+p_{ij} = \frac{\exp(\eta_{ij})}{1 + \sum_{i=2}^J \exp(\eta_{ij})}
+$$
+
+which is known as **multinomial logistic** model.
+
+# Note:
+
+-   Softmax coding for multinomial logistic regression: rather than selecting a baseline class, we treat all K class symmetrically - equally important (no baseline).
+
+$$
+P(Y = k | X = x) = \frac{exp(\beta_{k1} + \dots + \beta_{k_p x_p})}{\sum_{l = 1}^K exp(\beta_{l0} + \dots + \beta_{l_p x_p})}
+$$
+then the log odds ratio between $k-th$ and $k^{t}th$ classes is
+
+$$
+\log (\frac{P(Y=k|X=x)}{P(Y = k' | X=x)}) = (\beta_{k0} - \beta_{k'0}) + \dots + (\beta_{kp} - \beta_{k'p}) x_p
+$$
+
+# Poisson GLMs
+
+### The Poisson distribution
+
+The Poisson distribution specifies the probability of a
+discrete random variable $Y$ and is given by:
+
+
+$$f(y, \,\mu)\, =\, Pr(Y = y)\, =\, \frac{\mu^y \times e^{-\mu}}{y!}$$
+
+$$E(Y)\, =\, Var(Y)\, =\, \mu$$
+
+#
+where $\mu$ is the parameter of the Poisson distribution
+
+The Poisson distribution is particularly relevant to model count data because it:
+
+-   specifies the probability only for integer values
+-   $P(y<0) = 0$, hence the probability of any negative value is null
+-   $Var(Y) = \mu$ (the mean-variance relationship) allows for heterogeneity (e.g. when
+    variance generally increases with the mean)
+
+A Poisson GLM will model the value of $\mu$ as a function of different explanatory variables:
+
+# **Step 1.**
+
+We assume $Y_i$ follows a Poisson distribution with mean and variance $\mu_i$.
+
+$$Y_i \sim Poisson(\mu_i)$$
+
+$$E(Y_i) = Var(Y_i) = \mu_i$$
+
+$$f(y_i, \, \mu_i) = \frac{\mu^{y_i}_i \times e^{-\mu_i}}{y!}$$
+
+$\mu_i$ corresponds to the expected number of individuals.
+
+# **Step 2.**
+
+We specify the linear predictor of the model just as in a linear model.
+
+$$\underbrace{\alpha}_\text{Intercept} + \underbrace{\beta_1}_\text{slope of 'variable'} \times \text{variable}_i$$
+
+# **Step 3.**
+
+The link between the mean of $Y_i$ and linear predictor is a logarithmic function can be written as:
+
+$$log(\mu_i) = \alpha + \beta_1 \times \text{variable}_i $$
+
+It can also be written as:
+
+$$\mu_i = e^{ \alpha + \beta \times \text{variable}_i}$$
+
+This shows that the impact of each explanatory variable is multiplicative.
+Increasing variable by one increases $\mu$ by factor of exp( $\beta_\text{variable}$ ).
+
+We can also write it as:
+
+$$\mu_i = e^{\alpha} \times e^{\beta_1^{\text{variable}_i}}$$
+
+If $\beta_j = 0$ then $exp(\beta_j) = 1$ and $\mu$ is not related to $x_j$. If $\beta_j > 0$ then $\mu$ increases if $x_j$ increases; if $\beta_j < 0$ then $\mu$ decreases if $x_j$ increases.
+
+# setup
+```{r}
+df<-readxl::read_xlsx("multinomial.xlsx")
+df<-df |> 
+  separate(`y,party,race,gender`,into=c("y","party","race","gender"),",") |> 
+  mutate_if(is.character,as.factor) |> 
+  mutate(y=as.numeric(y)) |> 
+  rename(income="y")
+df
+
+write_csv(df,"multinom.csv")
+```
+
+#
+```{r}
+summary(df)
+```
+#
+```{r}
+table(df$party,df$race)
+```
+
+# model with all variables
+
+```{r}
+model<-nnet::multinom(party~.,data=df)
+model
+```
+
+#
+```{r}
+summary(model)
+```
+
+#
+
+$$\log(\frac{\pi_I}{\pi_D})=12.33053-1.55income-6.07377raceWhite-0.07011659genderMale$$
+$$\log(\frac{\pi_R}{\pi_D})=1.12294-0.113income-0.52094raceWhite-0.124genderMale$$
+```{r}
+p1<-exp(2.181+11.67-0.096*5000)/(1+exp(2.181+11.67-0.096*5000)+exp(1.58+6.55-0.053*5000))
+p1
+```
+
+```{r}
+p2<-exp(1.58+6.55-0.053*5000)/(1+exp(2.181+11.67-0.096*5000)+exp(2.181+11.67-0.096*5000))
+p2
+```
+
+```{r}
+1-p1-p2
+```
+
+#
+```{r}
+odds<-exp(1.12294-0.1137472*400)
+odds
+```
+
+
+# NULL MODEL
+```{r}
+mod_null<-nnet::multinom(party~1,data=df)
+mod_null
+```
+
+# model with gender
+```{r}
+(model_gend<-nnet::multinom(party~gender,data=df))
+
+```
+
+# compare the models
+```{r}
+anova(mod_null,model_gend,test="Chisq")
+```
+
+# model with race
+```{r}
+(model_race<-nnet::multinom(party~race,data=df))
+```
+
+# cmpare race model to null model
+```{r}
+anova(mod_null,model_race,test="Chisq")
+```
+
+# model with income
+```{r}
+(model_inc<-nnet::multinom(party~income,data=df))
+```
+
+# compare income model to null model
+```{r}
+anova(mod_null,model_inc,test="Chisq")
+```
+
+# model with race and income
+```{r}
+(model_inc_race<-nnet::multinom(party~income+race,data=df))
+```
+
+# compare models
+```{r}
+anova(model_inc_race,model_inc,test="Chisq")
+```
+
+# check using chi square distribution
+```{r}
+chisq.test(table(df$party,df$race))
+```
+
+# poisson dataset
+
+```{r}
+df<-read.table("canada.txt",sep="",header=TRUE) |> 
+  mutate_if(is.character,as.factor) |> 
+  as_tibble()
+df
+```
+
+#
+```{r}
+ggplot(df,aes(x=dead))+
+  geom_density()
+```
+
+# model with all variables
+```{r}
+model<-glm(dead~age+smoke+pop,data=df,family = poisson)
+model
+```
+
+#
+```{r,eval=FALSE}
+extract_eq(model,terms_per_line = 2,wrap=TRUE,use_coefs = TRUE, greek_colors = "blue")
+```
+$$
+\begin{aligned}
+\log ({ \widehat{E( \operatorname{dead} )} })  &= 2.77 + 0.62(\operatorname{age}_{\operatorname{45-59}})\ + \\
+&\quad 1(\operatorname{age}_{\operatorname{50-54}}) + 1.38(\operatorname{age}_{\operatorname{55-59}})\ + \\
+&\quad 1.5(\operatorname{age}_{\operatorname{60-64}}) + 2.14(\operatorname{age}_{\operatorname{65-69}})\ + \\
+&\quad 2.36(\operatorname{age}_{\operatorname{70-74}}) + 2.2(\operatorname{age}_{\operatorname{75-79}})\ + \\
+&\quad 1.95(\operatorname{age}_{\operatorname{80+}}) + 0.57(\operatorname{smoke}_{\operatorname{cigarretteOnly}})\ + \\
+&\quad 0.29(\operatorname{smoke}_{\operatorname{cigarrettePlus}}) - 0.21(\operatorname{smoke}_{\operatorname{no}})\ + \\
+&\quad 0(\operatorname{pop})
+\end{aligned}
+$$
+
+# model_null
+```{r}
+mod1<-glm(dead~1,data=df,family = poisson)
+```
+# model with age
+```{r}
+mod2<-glm(dead~age,data=df,family = poisson)
+```
+
+# COMPARE THE MODELS
+```{r}
+anova(mod1,mod2,test="LRT")
+```
+
+# model with population
+```{r}
+mod3<-glm(dead~pop,data=df,family = poisson)
+```
+
+# COMPARE NULL TO POPULATION MODEL
+```{r}
+anova(mod1,mod3,test="LRT")
+```
+
+# model with smoking
+```{r}
+mod4<-glm(dead~smoke,data=df,family = poisson)
+```
+
+# COMPARE SMOKING MODEL TO NULL MODEL
+```{r}
+anova(mod1,mod4,test="LRT")
+```
+
+# REPORT BEST MODEL
+```{r}
+report::report(model)
+```
+
+

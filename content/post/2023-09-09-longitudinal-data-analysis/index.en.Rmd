@@ -1,0 +1,721 @@
+---
+title: Longitudinal Data Analysis
+author: Bongani Ncube
+date: '2023-09-09'
+slug: longitudinal-data-analysis
+categories:
+  - Rstats
+  - predictivemodeling
+  - statistics
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-09-09T14:18:43+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+
+
+```{r cars,echo=FALSE,warning=FALSE}
+library(labelled)   # labeling data
+library(rstatix)    # summary statistics
+library(ggpubr)     # convenient summary statistics and plots
+library(GGally)     # advanced plot
+library(car)        # useful for anova/wald test
+library(Epi)        # easy getting CI for model coef/pred
+library(lme4)       # linear mixed-effects models
+library(lmerTest)   # test for linear mixed-effects models
+library(emmeans)    # marginal means
+library(multcomp)   # CI for linear combinations of model coef
+library(geepack)    # generalized estimating equations
+library(ggeffects)  # marginal effects, adjusted predictions
+library(gt)      
+library(nlme)# nice tables
+library(flextable)
+library(tidyverse)  # for everything (data manipulation, visualization, coding, and more)
+theme_set(theme_minimal() + theme(legend.position = "bottom")) # theme for ggplot
+
+```
+
+# longitudinal data analysis
+
++ If repeated measurements are over time, such data are
+called repeated measures, time-course, or
+longitudinal data
++ Studies involving such data are often called longitudinal
+studies (usually a cohort study, although RCTs can also
+be longitudinal).
+
+# features of longitudinal data
+
++ Defining feature: repeated observations on individuals, allowing the
+direct study of change.
++ Note that the measurements are commensurate, i.e. the same variable
+is measured repeatedly.
++ Longitudinal data require sophisticated statistical techniques because
+the repeated observations are usually (positively) correlated.
++ Sequential nature of the measures implies that certain types of
+correlation structures are likely to arise.
++ Correlation must be accounted for to obtain valid inferences.
+
+# potential advantages
+
++ They allow investigation of events that occur in time. Essential to the
+study of normal growth and aging, and the eﬀects of individual
+characteristics, treatments, or environmental exposures on those
+changes. Also essential to the study of the temporal pattern of response
+to treatment.
++ Can study the order of events.
++ Permit more complete ascertainment of exposure histories in
+epidemiologic studies.
+
+# example dataset used in this presentation
+
++ This study was conducted in 16 boys and 11 girls, who at ages 8, 10, 12, and 14 had their distance (mm) from the center of the pituitary gland to the pteryomaxillary fissure measured. Changes in pituitary-pteryomaxillary distances during growth is important in orthodontal therapy.
++ The goals of the study were to describe the distance in boys and girls as simple functions of age, and then to compare the functions for boys and girls
+
+# read in data
+
+### The dental dataset contains the following variables:
+
++ id = a sequential number;
++ sex = sex, a factor with categories 0 = “Girl”, 1 = “Boy”;
++ y8 = Measure at age 8;
++ y10 = Measure at age 10;
++ y12 = Measure at age 12;
++ y14 = Measure at age 14.
+
+#
+```{r}
+dental<-readr::read_csv("dental.csv")
+
+dat<-dental |> 
+  dplyr::select(-1) |> 
+  gather(key=ageclass,value=distance,-c(id,sex)) |> 
+  arrange(id) |> 
+  mutate(agesex=paste0(ageclass,sex),
+         age=as.numeric(substr(ageclass,2,1000)),
+         age1=as.factor(age),
+         sex1=ifelse(sex=="Girl",1,0))
+```
+
+# glimpse of the dataset
+
+```{r}
+(tab<-dat%>%
+  head() |> 
+  flextable() %>%
+  flextable::set_table_properties(width = .75, layout = "autofit") %>%
+  flextable::theme_zebra() %>%
+  flextable::fontsize(size = 12) %>%
+  flextable::fontsize(size = 12, part = "header") %>%
+  flextable::align_text_col(align = "center") %>%
+  flextable::set_caption(caption = "data summary.")  %>%
+  flextable::border_outer())
+```
+
+# for the following graphs ill use my own format
+
+
+```{r}
+dental_long <- pivot_longer(dental, cols = starts_with("y"), 
+                            names_to = "measurement", values_to = "distance") %>% 
+  mutate(
+    age = parse_number(measurement),
+    measurement = fct_inorder(paste("Measure at age", age))
+  ) %>% 
+  set_variable_labels(
+    age = "Age of the child at measurement",
+    measurement = "Label for time measurement",
+    distance = "Measurement"
+  )
+```
+
+#
+```{r}
+group_by(dental_long, sex, measurement) %>% 
+  get_summary_stats(distance, show = c("mean", "sd","median","sd","max","min")) |> 
+  kableExtra::kbl()
+```
+
+#
+```{r,fig.height=4}
+(box<-ggplot(dental_long, aes(measurement, distance, fill = measurement)) +
+  tvthemes::scale_fill_avatar()+
+  geom_boxplot() +
+  geom_jitter(width = 0.2) +
+  guides(fill = "none") +
+  labs(x = "", y = "Dental growth, mm")+
+  theme(axis.title = element_text(face = 2),
+        axis.title.x = element_text(hjust = 1),
+        axis.text.x = element_text(angle = 35, hjust = 1, vjust = 1)))
+
+```
+
+```{r,fig.height=4}
+(box1<-ggplot(dental_long, aes(sex, distance, fill = measurement)) +
+  tvthemes::scale_fill_avatar()+
+  geom_boxplot() +
+  labs(x = "", y = "Dental growth, mm", fill = ""))
+```
+
+```{r,fig.height=4}
+group_by(dental_long, sex, measurement) %>% 
+  summarise(mean_distance = mean(distance), .groups = "drop") %>% 
+  ggplot(aes(sex, mean_distance, fill = measurement, label = round(mean_distance))) +
+  geom_col(position = "dodge") +
+  tvthemes::scale_fill_avatar()+
+  geom_text(position = position_dodge(width = 0.9), vjust = -0.5) +
+  coord_flip() +
+  labs(x = "", y = "Mean Dental growth, mm", fill = "")
+
+```
+
+# covariance
+```{r}
+# co-variance matrix
+cov_obs <- dplyr::select(dental, starts_with("y")) %>%  cov()
+cov_obs
+
+```
+
+# correlation matrix
+```{r}
+cov2cor(cov_obs)
+```
+
+# further exploration
+```{r,warning=FALSE,message=FALSE}
+ggpairs(dplyr::select(dental, starts_with("y")), lower = list(continuous = "smooth"))
+```
+
+#
+```{r,warning=FALSE,message=FALSE}
+ggpairs(dental, mapping = aes(colour = sex), columns = 3:6,
+        lower = list(continuous = "smooth"))
+```
+
+# trend by gender
+```{r}
+(p<-group_by(dental_long, sex, age) %>% 
+  summarise(mean = list(mean_ci(distance)), .groups = "drop") %>% 
+  unnest_wider(mean) %>% 
+  mutate(agex = age - .05 + .05*(sex == "Boy")) %>% 
+  ggplot(aes(agex, y, col = sex, shape = sex)) +
+  geom_point() +
+  ggthemes::scale_shape_cleveland()+
+  geom_errorbar(aes(ymin = ymin, ymax = ymax), width = 0.2) +
+  geom_line() +
+  labs(x = "Age, years", y = "Mean Dental growth, mm", shape = "Sex", col = "Sex"))
+```
+
+
+
+
+# dental growth per child
+```{r,fig.height=3}
+(p<-ggplot(dental_long, aes(age, distance, col = factor(id))) +
+  geom_point() +
+  geom_line() +
+  tvthemes::scale_color_avatar()+
+  facet_wrap(~ id) +
+  labs(x = "Age, years", y = "Dental growth, mm", col = "Child id") +
+  guides(col = guide_legend(nrow = 3)))
+```
+
+
+```{r}
+(q<-ggplot(dental_long, aes(age, distance, col = factor(id))) +
+  geom_line() +
+  tvthemes::scale_color_avatar()+
+  labs(x = "Age, years", y = "Dental growth, mm", col = "Child id") +
+  guides(col = guide_legend(nrow = 3)))
+```
+
+
+```{r,warning=FALSE,message=FALSE}
+(m<-ggplot(dental_long, aes(age, distance)) +
+  geom_line(aes(group = factor(id))) +
+  geom_smooth() +
+  facet_grid(~ sex)) 
+```
+
+
+#  Variance Components - matrix *V* :
+
++ Maximum Likelihood (ML)
++ restricted maximum likelihood (REML)
+
+# What’s the difference between ML and REML
++ ML estimates of variances are known to be biased in small samples
++ the simplest case: Sample variance
+
+$$var(x)=\frac{1}{n-1}\sum_{i=1}^n(x_i-\bar{x})^2$$
+
++ The REML estimation is a generalization of this idea,It provides unbiased estimates of the parameters in the covariance matrix $V_i$ in small samples
+
+# fitting marginal models in R
+
+> Marginal models can be ﬁtted using function *gls()* from the *nlme* package
+it has the following structure
+
++ *model*: a formula specifying the response vector and the covariates to include in
+the model
++ *data*: a data frame containing all the variables
++ *correlation*: a function describing the assumed correlation structure
++ *weights*: a function describing the assumed within-group heteroscedasticity
+structure
+
+# covariance and correlation matrices
+
+```{r rstudio-id, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+
+knitr::include_graphics("covv.png")
+
+```
+
+# Properties
+
++ on the diagonal the variances, oﬀ diagonal covariances
++ symmetric $\rightarrow cov(Y_1 , Y_2 ) = cov(Y_2 , Y_1)$
+
+## Variances, covariances and correlations
+
++ variance measures how far a set of numbers is spread out (always positive)
++ covariance is a measure of how much two random variables change together
+(positive or negative)
++ correlation a measure of the linear correlation (dependence) between two variables
+(between -1 and 1; 0 no correlation)
+
+$$corr(Y_1,Y_2)=\frac{cov(Y_1.Y_2)}{\sqrt{var(Y_1)\sqrt{var(Y_2}}}$$
+
++ Due to the fact that the magnitude of the covariance between $Y_1$ and $Y_2$ depends on their variability, we translate the covariance matrix into a correlation matrix
+
+#
+```{r rstudio-i, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+
+knitr::include_graphics("corrr.png")
+
+```
+
+# 
++ We need an appropriate choice for $V_i$ in order to appropriately describe the
+correlations between the repeated measurements
+
++ compound symmetry 
++ Gaussian spatial correlation
++ autoregressive process 
++ Toeplitz
++ exponential spatial correlation
+
+## 
+
+- _Unstructured_ - Every variance and covariance term for observations within a school is a separate parameter and is therefore estimated uniquely; no patterns among variances or correlations are assumed.  This structure offers maximum flexibility but is most costly in terms of parameters estimated.
+- _Compound symmetry_ - Assume variance is constant across all time points and correlation is constant across all pairs of time points.  This structure is highly restrictive but least costly in terms of parameters estimated.
+- _Autoregressive_ - Assume variance is constant across all time points, but correlation drops off in a systematic fashion as the gap in time increases.  Autoregressive models expand compound symmetry by allowing for a common structure where points closest in time are most highly correlated.
+
+#
+##
+
+- _Toeplitz_ - Toeplitz is similar to the autoregressive model, except that it does not impose any structure on the decline in correlation as time gaps increase.  Thus, it requires more parameters to be estimated than the autoregressive model while providing additional flexibility.
+- _Heterogeneous variances_ - The assumption that variances are equal across time points found in the compound symmetry, autoregressive, and Toeplitz models can be relaxed by introducing additional parameters to allow unequal (heterogeneous) variances.
+
+
+# doing it in R
+## define a function in R
+
+```{r}
+corandcov <- function(glsob,cov=T,...){
+  corm <- corMatrix(glsob$modelStruct$corStruct)[[5]]
+  print(corm)
+  varstruct <- print(glsob$modelStruct$varStruct)  
+  varests <- coef(varstruct, uncons=F, allCoef=T)
+  covm <- corm*glsob$sigma^2*t(t(varests))%*%t(varests)
+  return(covm)}
+```
+
+
+# unstructured mean and unstructured covariance
+##
+```{r}
+## model 1
+model<-gls(distance~-1+age1*sex1,data=dat,corr=corSymm(form=~1|id) , 
+           weights=varIdent(form=~1|age1),
+          method="ML")
+
+cc <- corMatrix(model$modelStruct$corStruct)[[5]]
+print(cc)
+```
+
+# linear average trend
+###
+```{r}
+model2<-gls(distance~age*sex +sex ,data=dat,corr=corSymm(form=~1|id) , 
+           weights=varIdent(form=~1|age1),
+          method="ML")
+
+cc <- corMatrix(model2$modelStruct$corStruct)[[5]]
+print(cc)
+```
+
+# compare model 1 and 2
+###
+```{r}
+anova(model2,model,type="LR")
+```
+
+# Parallel average profiles
+###
+```{r}
+model3<-gls(distance~age+sex,data=dat,corr=corSymm(form=~1|id) , 
+           weights=varIdent(form=~1|age1),
+          method="ML")
+cc <- corMatrix(model3$modelStruct$corStruct)[[5]]
+print(cc)
+```
+
+
+# compare all the three models
+###
+```{r}
+anova(model,model2,model3,type="LR")
+```
+
+# Topeltz covariance structure
+###
+```{r}
+model4<-gls(distance~age*sex+sex,data=dat,corr=corARMA(form=~1|id,p=3,q=0) , 
+           weights=varIdent(form=~1|age1),
+          method="ML")
+cc <- corMatrix(model4$modelStruct$corStruct)[[5]]
+print(cc)
+```
+
+# compare all the 4 models
+###
+```{r}
+anova(model,model2,model3,model4,type="LR")
+```
+
+# AR(1) covariance structure
+###
+```{r}
+model5<-gls(distance~age*sex+sex,data=dat,corr=corAR1(form=~1|id) , 
+           weights=varIdent(form=~1|age1),
+          method="ML")
+cc <- corMatrix(model5$modelStruct$corStruct)[[5]]
+print(cc)
+```
+
+# compare all models
+###
+```{r}
+anova(model,model2,model3,model4,model5)
+```
+```{r}
+cc <- corMatrix(model4$modelStruct$corStruct)[[5]]
+print(cc)
+
+```
+
+# General Linear Mixed effects model
+
++ Linear MIXED models mix (consider) both ﬁxed and
+random eﬀects (Hence the name ’Mixed’ models)
++ These models are a way of dealing with
+correlated data so we can consider research questions in
+much the same way as independant data; Inferences
+about within-subject eﬀects can be conducted in a
+similar way to (standard) between-subject eﬀects.
++ in these models, some subset of the regression coefficients vary randomly from one individual to another, accounting for natural heterogeneity across subjects. Individuals in population are assumed to have their own subject-specific mean response trajectories over time.
++ The mean response is modeled as a combination of population characteristics (fixed effects) assumed to be shared by all individuals, while subject-specific effects (random effects) are unique to a particular individual.
++ Linear Mixed Models are a particular type of hierarchical models which contains both fixed and random effects.
+
+
+# Two - Stage Approach
+
+## Growth curve models can be motivated in terms of a two-stage model. In the two-stage model, we assume
+
+1.  A straight line (or curve) ﬁts the observed responses for each subject
+(ﬁrst stage)
+2.  A regression model relating the mean of the individual intercepts and
+slopes to subject-speciﬁc covariates (second stage)
+
+
+# stage 1
+$$Y_{ij}=v_{i1}+v_{i2}t_{ij}+\epsilon_{ij}$$
+
+where $v_{i1}$ and $v_{i2}$ are parameters specific to the $ith$ subject and the errors,
+$e_{ij}$ , are implicitly assumed to be independent within a subject.
+
+# Doing it in R : method 1
+
+```{r}
+library(nlme);rel_model<-lmList(distance~age,data=Orthodont);plot(augPred(rel_model),grid=TRUE)
+```
+
+# method 2 : using R's nested data capabilities
+```{r}
+# created nested dataframes 
+dental_nested <- Orthodont %>%  
+              group_by(Subject) %>% 
+              nest() 
+
+dental_nested
+```
+
+# create linear models for each subject or individual
+
+```{r}
+dental_models<-dental_nested %>% 
+  mutate(
+    model=map(data,~lm(distance~age,data=.x))
+  )
+dental_models
+```
+
+# coefficients of multiple models
+
+```{r}
+dental_models %>%  
+  mutate(coef = map(model,~tidy(.x))) %>% 
+  unnest(coef) 
+```
+# model performance
+
+```{r}
+library(broom)
+model_perf<-dental_models %>% 
+  mutate(coef=map(model,~glance(.x))) %>% 
+  unnest(coef);model_perf
+```
+
+# visualy inpect fit of your models
+```{r}
+augmented_models<-dental_models %>% 
+  mutate(augmented=map(model,~augment(.x))) %>% 
+  unnest(augmented)
+```
+
+# visualy inspect the models 
+```{r}
+p<-augmented_models %>% 
+  ggplot(aes(x=distance,y=age))+
+  geom_point()+
+  geom_line(aes(y=.fitted),color="red")+ 
+  facet_wrap(~Subject,scale="free")
+```
+
+#
+```{r}
+p
+```
+
+# stage 2 : the intercepts and the slopes are regressed on
+other covariates:
+
+$$v_{i1} = \alpha_1 + X_i\beta_1 + e_{i1}$$
+$$v_{i2} = \alpha_2 + X_i\beta_2 + e_{i2}$$
+
+##
+```{r}
+b<-lapply(rel_model,coef)
+V<-lapply(rel_model,vcov)
+```
+
+```{r}
+estm<-rep(c("intercept","slope"),length(b))
+subj<-rep(names(b),each=2)
+```
+
+```{r}
+library(metafor)
+b<-unlist(b)
+V<-bldiag(V)
+```
+
+# results for stage 2
+```{r}
+(res2<-rma.mv(b~estm-1,V,random=~estm|subj,struct="UN"))
+```
+
+# drawbacks for the 
+
++ The two-stage method is less attractive when the number and timing of
+observations varies among subjects, because it does not take proper
+account of the weighting.
++ Also, note that the two-stage formulation of the growth curve model
+imposes certain restrictions and structure on the covariates.
++ That is, in the two-stage approach covariates at the ﬁrst stage (except for
+the intercept) must be time-varying, while covariates at the second stage
+must be time-invariant.
++ In contrast, in the mixed eﬀects model the only restriction is that the
+columns of Z i are a subset of the columns of $X_i$ .
+
+# the general mixed effects model
+
++ the two stage model can be perfomed explicitly in the analysis 
++ the associated drawbacks of the two stage model can be avoided by combining the two stages into one model such that 
+
+$$Y_i=Z_i\beta_i+\epsilon_i \cdots (1)$$
+
+$$\beta_i=K_i\beta+b_i \cdots (2)$$ 
+can be simplified to 
+
+$$Y_i=X_i\beta+Z_ib_i+\epsilon_i$$ where $Z_iK_i=X_i$
+
+#
+it is given that 
+
+$$b_i \sim N(0,D)$$
+$$\epsilon_i:n_i \times 1$$ error vector 
+$$\epsilon_i \sim N(0,R)$$ and $b_1\cdots b_N,\epsilon_1,\cdots,\epsilon_N$ independent
+
+# Terminology
+
++ Random Effects : $\beta$: $p \times 1$ vector of fixed effects regression coefficient
+
+>  Random eﬀects are those where the particular ’groups’
+of observations (levels) are drawn randomly from a population of groups.
+
++ fixed effects : $b_i$ : $q\times 1$ vector of random effects regression coefficient
+
+>  are the ones we know (and love), where we
+would expect a differences between two groups to be FIXED
+as we move from the sample to the population
+
+#
+
++ Variance components are elements in $D$ and $R$ 
+
++ $Y_i$ : $n_i \times 1$ response vector
++ $X_i$ : $n_i \times p$ design matrix of fixed effects
++ $Z_i$ : $n_i \times q$ design matrix of random effects
+
+hence
+
+$$Y_i \sim N(X_i\beta,V(\alpha))$$
+
+# features
+
++ D must be symmetric and positive definite
++ $Z_i$ columns are subsets of $X_i$ columns
++ conditional mean of $Y_i$ given random effects $b_i$ is $E(Y_i|b_i)=X_i\beta+Z_ib_i$
+
++ the marginal mean of $Y_i$ is $E(E(Y_i|b_i))=E(X_i\beta+Z_ib_i)=X_i\beta$
+
+# Matrix D
+```{r rstudio, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+knitr::include_graphics('new1.png')
+```
+
+# Matrix R
+```{r rstudiide, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+knitr::include_graphics('new_r.png')
+```
+
+# contrasting with the general linear model
+```{r rstudide, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+knitr::include_graphics('new_p.png')
+```
+
+# cont'd
+```{r rstu-ide, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+knitr::include_graphics('new3.png')
+```
+
+# fitting the General linear mixed effects model (lme package)
+
+```{r}
+model<-lme(distance~age,random=~age|Subject,data=Orthodont)
+
+#equatiomatic::extract_eq(model)
+
+```
+
++ almost similar to the two stage results 
+
+# fitting using the imer package
+
+```{r}
+lin_0 <- lmer(distance ~ 1 + (1 | id), data = dental_long)
+summary(lin_0)
+#equatiomatic::extract_eq(lin_0)
+
+```
+
+# interpretation
+
++ The estimated marginal mean of the dental distance is  $\beta_0=24.02mm$
++ The estimated variance of the random-effect reflecting between-subject variability is 3.752; the estimated variance of the error term reflecting within-subject variability is 4.930. 
++ The correlation between any two repeated measures (ICC) is equal to $3.76/(3.76+4.93)=0.43$
+
+#
+```{r}
+ranova(lin_0)
+```
+
+# comment
+
++ The small p-value suggests evidence of between-individual heterogeneity, which support evidence for choosing a mixed-effects model instead of a only fixed-effects model.
+
+
+
+$$
+\begin{aligned}
+  \operatorname{distance}_{i}  &\sim N \left(\alpha_{j[i]}, \sigma^2 \right) \\
+    \alpha_{j}  &\sim N \left(\mu_{\alpha_{j}}, \sigma^2_{\alpha_{j}} \right)
+    \text{, for id j = 1,} \dots \text{,J}
+\end{aligned}
+$$
+
+
+$$
+\begin{aligned}
+  \operatorname{Weight}_{i}  &\sim N \left(\alpha_{j[i]} + \beta_{1}(\operatorname{Mnth}), \sigma^2 \right) \\
+    \alpha_{j}  &\sim N \left(\gamma_{0}^{\alpha} + \gamma_{1}^{\alpha}(\operatorname{Prog}_{\operatorname{diet+exercise}}) + \gamma_{2}^{\alpha}(\operatorname{Prog}_{\operatorname{modified\ diet}}) + \gamma_{3}^{\alpha}(\operatorname{Mnth} \times \operatorname{Prog}_{\operatorname{diet+exercise}}) + \gamma_{4}^{\alpha}(\operatorname{Mnth} \times \operatorname{Prog}_{\operatorname{modified\ diet}}), \sigma^2_{\alpha_{j}} \right)
+    \text{, for ID j = 1,} \dots \text{,J}
+\end{aligned}
+$$
+

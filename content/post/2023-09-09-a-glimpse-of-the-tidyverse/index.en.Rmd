@@ -1,0 +1,378 @@
+---
+title: A glimpse of the tidyverse
+author: Bongani Ncube
+date: '2023-09-09'
+slug: a-glimpse-of-the-tidyverse
+categories:
+  - dplyr
+  - datascience
+  - Rstats
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-09-09T13:44:42+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+```{r loadstuff, include=FALSE}
+knitr::opts_chunk$set(cache=FALSE)
+
+library(tidyverse)
+library(asaur)
+
+```
+
+# Introduction
+### Goal for Today
+
+*Introduce you to R and Rstudio.*
+  
+  
+# What Are R and Rstudio?
+
+### What Is R?
+
+R is an open source programming language with origins in C and FORTRAN. Advantages:
+  
+  - Flexibility
+- It's free (and open source)!
+- Ease of handling advanced computational models
+- Ease of handling multiple data sets in one session
+- Higher demand in industries.
+
+But more importantly, it's free.
+
+### What Is R?
+
+Some disadvantages:
+  
+  - "Bleeding" edge? (Even then...)
+- Higher learning curve
+- A "programming language" and not a "program."
+
+Rstudio will help with the learning curve component.
+
+## Getting Started in R and Rstudio
+### Getting Started in R and Rstudio
+
+Let's get started in Rstudio first. Select "Tools" in the menu.
+
+- Scroll to "Global Options" (should be at the bottom)
+- On the pop-up, select "pane layout."
+- Rearrange so that "Source" is top left, "Console" is top right", and the files/plots/packages/etc. is the bottom right.
+- Save
+
+###
+
+![](rstudio-global-options.png)
+
+
+### Getting Started in R and Rstudio
+
+Hit Ctrl-Shift-N (Cmd-Shift-N if you're on a Mac) to open up a new script.
+
+- Minimize the "Environment/History/Connections/Git" pane in the bottom left.
+- Adjust the console output to your liking.
+
+This should maximize your Rstudio experience, esp. as you'll eventually start writing documents in Rstudio.
+
+
+- That should maximize your Rstudio experience, esp. as you begin to write documents in Rstudio as well.
+
+
+### A Few Commands to Get Started
+
+`getwd()` will spit out your current working directory.
+
+```{r}
+getwd()
+```
+
+By default, assuming your username is "Bongani":
+
+- Windows: `"D:/"` (notice the forward slashes!)
+
+### Creating Objects
+
+R is an "object-oriented" programming language.
+
+- i.e. inputs create outputs that may be assigned to objects in the workspace.
+
+For example: 
+
+```{r}
+
+a <- 3
+b <- 4 
+this_is_a_long_object_name_and_you_should_not_do_this <- 5
+d <- pi # notice there are a few built-in functions/objects
+```
+
+Sometimes it's useful to see all the mess you've created in your workspace
+
+```{r}
+ls()
+```
+
+
+### Install Packages
+
+R depends on user-created libraries to do much of its functionality. We're going to start with a few for the sake of this exercise.
+
+
+```{r, eval=F}
+# This will take a while, mostly for tidyverse
+install.packages(c("tidyverse","devtools"))
+
+# Once it's installed:
+library(tidyverse)
+library(devtools)
+
+```
+
+
+### Load Data
+
+You can load data from your hard drive, or even the internet. Some commands:
+  
+  - `haven::read_dta()` for Stata .dta files
+- `haven::read_spss()` for SPSS files
+- `read_csv()` for CSV files
+- `readxl::read_excel()` for MS Excel spreadsheets
+- `read_tsv()`for tab-separated values.
+
+Just make sure to apply it to an object.
+
+\scriptsize
+```{r, eval=F}
+# Note: hypothetical data
+Apply <- haven::read_dta("D:\MY THESIS\BONGANIfinalologit.dta")
+
+Cunemp <- read_tsv("D:\MY THESIS\BONGANIfinalla.data.64.County") 
+```
+
+\normalsize
+
+
+### Load Data
+
+Some R packages, like `pharmacoSmoking` package, has built-in data. For example:
+  
+```{r}
+pwt_sample= pharmacoSmoking |> 
+  as.tibble()
+names(pwt_sample)
+
+```
+
+
+## Tidyverse
+### Tidyverse
+
+The tidyverse is a suite of functions/packages that totally rethink base R. Some functions we'll discuss:
+
+- `%>%` (the pipe)
+- `glimpse()` and `summary()`
+- `select()`
+- `group_by()`
+- `summarize()`
+- `mutate()`
+- `filter()`
+
+I cannot fully discuss everything from the tidyverse. That's why there's Google/Stackexchange. :P
+
+### `%>%`
+
+The pipe (`%>%`) allows you to chain together a series of tidyverse functions.
+
+- This is especially useful when you're recoding data and you want to make sure you got everything right before saving the data.
+
+You can chain together a host of tidyverse commands within it.
+
+### `glimpse()` and `summary()`
+
+`glimpse()` and `summary()` will get you some basic descriptions of your data. For example:
+  
+```{r}
+pwt_sample %>% glimpse() # notice the pipe
+```
+
+### `glimpse()` and `summary()`
+
+`summary()` is technically not a tidyverse function, but it works within the pipe.
+
+```{r}
+pwt_sample= pharmacoSmoking
+pwt_sample %>% summary()
+```
+
+### `select()`
+
+`select()` will grab (or omit) columns from the data.
+
+```{r}
+# grab everything
+pwt_sample %>% select(everything()) |> head()
+```
+
+### `select()`
+
+```{r}
+# grab everything, but drop the id variable.
+pwt_sample %>% select(-id) 
+```
+
+### `select()`
+
+```{r}
+# grab just these three columns.
+pwt_sample %>% select(ttr, grp, gender)
+```
+
+### `group_by()`
+
+`group_by()` might be the most powerful function in tidyverse.
+
+- tl;dr: it allows you to perform functions within specific subsets (groups) of the data.
+
+```{r} 
+# Notice we can chain some pipes together
+pwt_sample %>%
+  # group by gender
+  group_by(gender) %>%
+  # Get me the first observation, by group.
+  slice(1)
+```
+
+
+### `group_by()`
+
+Notice what would happen in the absence of `group_by()`
+
+```{r} 
+pwt_sample %>%
+  # Get me the first observation for each gender
+  slice(1) #Forgot to group_by()
+```
+
+Caveat: if you're applying a group-specific function (that you need once), it's generally advisable to "ungroup" (i.e. `ungroup()`) the data when you're done.
+
+### `summarize()`
+
+`summarize()` creates condensed summaries of the data, for whatever it is you want.
+
+```{r}
+pwt_sample %>%
+    # How many observations are in the data?
+    dplyr::summarize(n = n())
+```
+
+### `summarize()`
+
+```{r}
+# Note: works *wonderfully* with group_by()
+pwt_sample %>%
+    group_by(gender) %>%
+    # Give me the max time to relapse observed in the data.
+    dplyr::summarize(maxttr = max(ttr, na.rm=T))
+    
+```
+
+
+### `mutate()`
+
+`mutate()` creates new columns while retaining original dimensions of the data (unlike `summarize()`).
+
+```{r}
+pwt_sample %>%
+    # Convert rgdpna from real GDP in millions to real GDP in billions
+    mutate(ttrmonths = ttr/30)
+
+```
+
+### `mutate()`
+
+Note: this also works well with `group_by()`
+
+```{r}
+pwt_sample %>%
+    group_by(gender) %>%
+    # divide ttr over the gender's max, for some reason.
+  mutate(ttrprop = ttr/max(ttr, na.rm=T)) |> 
+  select(ttrprop) |> 
+  head()
+```
+
+
+### `filter()`
+
+`filter()` is a great diagnostic tool for subsetting your data to look at specific observations.
+
+- Notice the use of double-equal signs (`==`) for the `filter()` functions.
+
+```{r}
+pwt_sample %>%
+  filter(race== "black") |> 
+  head()
+```
+
+
+
+
+### Don't Forget to Assign
+
+When you're done, don't forget to assign what you've done to an object.
+
+```{r}
+pwt_sample %>%
+    group_by(gender) %>%
+    # divide ttr over the gender's max, for some reason.
+  mutate(ttrprop = ttr/max(ttr, na.rm=T)) |> 
+  select(ttrprop) |> 
+  head() -> NewObjectName
+```
+
+tidyverse's greatest feature is the ability to see what you're coding in real time before commiting/overwrting data.

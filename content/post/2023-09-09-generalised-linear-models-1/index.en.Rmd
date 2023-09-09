@@ -1,0 +1,416 @@
+---
+# Documentation: https://wowchemy.com/docs/managing-content/
+
+title: "Generalised Linear Models 1"
+subtitle: ""
+summary: ""
+authors: []
+tags: []
+categories: []
+date: 2023-09-09T12:48:21+02:00
+lastmod: 2023-09-09T12:48:21+02:00
+featured: false
+draft: false
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+# Generalized linear models
+
+**Exponential Family**
+The theory of GLMs is developed for data with distribution given y the **exponential family**.
+The form of the data distribution that is useful for GLMs is
+
+$$
+f(y;\theta, \phi) = \exp(\frac{\theta y - b(\theta)}{a(\phi)} + c(y, \phi))
+$$
+
+# where
+
+-   $\theta$ is called the natural parameter
+-   $\phi$ is called the dispersion parameter
+
+**Note**:
+
+This family includes the [Gamma], [Normal], [Poisson], and other. For all parameterization of the exponential family, check this 
+
+# **Example**
+
+if we have $Y \sim N(\mu, \sigma^2)$
+
+$$
+\begin{aligned}
+f(y; \mu, \sigma^2) &= \frac{1}{(2\pi \sigma^2)^{1/2}}\exp(-\frac{1}{2\sigma^2}(y- \mu)^2) \\
+&= \exp(-\frac{1}{2\sigma^2}(y^2 - 2y \mu +\mu^2)- \frac{1}{2}\log(2\pi \sigma^2)) \\
+&= \exp(\frac{y \mu - \mu^2/2}{\sigma^2} - \frac{y^2}{2\sigma^2} - \frac{1}{2}\log(2\pi \sigma^2)) \\
+&= \exp(\frac{\theta y - b(\theta)}{a(\phi)} + c(y , \phi))
+\end{aligned}
+$$
+
+# where
+
+-   $\theta = \mu$
+-   $b(\theta) = \frac{\mu^2}{2}$
+-   $a(\phi) = \sigma^2 = \phi$
+-   $c(y , \phi) = - \frac{1}{2}(\frac{y^2}{\phi}+\log(2\pi \sigma^2))$
+
+# **Properties of GLM exponential families**
+
+1.  $E(Y) = b' (\theta)$ where $b'(\theta) = \frac{\partial b(\theta)}{\partial \theta}$ (here `'` is "prime", not transpose)
+
+2.  $var(Y) = a(\phi)b''(\theta)= a(\phi)V(\mu)$.
+
+    -   $V(\mu)$ is the *variance function*; however, it is only the variance in the case that $a(\phi) =1$
+
+3.  If $a(), b(), c()$ are identifiable, we will derive expected value and variance of Y.
+
+# Example
+
+Normal distribution
+
+$$
+b'(\theta) = \frac{\partial b(\mu^2/2)}{\partial \mu} = \mu$$
+$$V(\mu) = \frac{\partial^2 (\mu^2/2)}{\partial \mu^2} = 1$$
+$$\to var(Y) = a(\phi) = \sigma^2
+$$
+
+# Poisson distribution
+
+$$
+\begin{aligned}
+f(y, \theta, \phi) &= \frac{\mu^y \exp(-\mu)}{y!}
+&= \exp(y\log(\mu) - \mu - \log(y!)) 
+&= \exp(y\theta - \exp(\theta) - \log(y!))
+\end{aligned}
+$$
+
+# where
+
+-   $\theta = \log(\mu)$
+-   $a(\phi) = 1$
+-   $b(\theta) = \exp(\theta)$
+-   $c(y, \phi) = \log(y!)$
+
+Hence,
+
+$$
+E(Y) = \frac{\partial b(\theta)}{\partial \theta} = \exp(\theta) = \mu$$
+$$var(Y) = \frac{\partial^2 b(\theta)}{\partial \theta^2} = \mu
+$$
+
+Since $\mu = E(Y) = b'(\theta)$
+
+In GLM, we take some monotone function (typically nonlinear) of $\mu$ to be linear in the set of covariates
+
+$$
+g(\mu) = g(b'(\theta)) = \mathbf{x'\beta}
+$$
+
+# Equivalently,
+
+$$
+\mu = g^{-1}(\mathbf{x'\beta})
+$$
+
+where $g(.)$ is the **link function** since it links mean response ($\mu = E(Y)$) and a linear expression of the covariates
+
+Some people use $\eta = \mathbf{x'\beta}$ where $\eta$ = the "linear predictor"
+
+# **GLM is composed of 2 components**
+
+The **random component**:
+
+-   is the distribution chosen to model the response variables $Y_1,...,Y_n$
+
+-   is specified by the choice fo $a(), b(), c()$ in the exponential form
+
+-   Notation:
+
+Assume that there are n **independent** response variables $Y_1,...,Y_n$ with densities
+        $$
+        f(y_i ; \theta_i, \phi) = \exp(\frac{\theta_i y_i - b(\theta_i)}{a(\phi)}+ c(y_i, \phi))
+        $$ notice each observation might have different densities
+    -   Assume that $\phi$ is constant for all $i = 1,...,n$, but $\theta_i$ will vary. $\mu_i = E(Y_i)$ for all i.
+
+# The **systematic component**
+
+-   is the portion of the model that gives the relation between $\mu$ and the covariates $\mathbf{x}$
+
+-   consists of 2 parts:
+
+    -   the *link* function, $g(.)$
+    -   the *linear predictor*, $\eta = \mathbf{x'\beta}$
+
+-   Notation:
+
+assume $g(\mu_i) = \mathbf{x'\beta} = \eta_i$ where $\mathbf{\beta} = (\beta_1,..., \beta_p)'$
+    -   The parameters to be estimated are $\beta_1,...\beta_p , \phi$
+
+# **The Canonical Link**
+
+To choose $g(.)$, we can use **canonical link function** (Remember: Canonical link is just a special case of the link function)
+
+If the link function $g(.)$ is such $g(\mu_i) = \eta_i = \theta_i$, the natural parameter, then $g(.)$ is the canonical link.
+
+# Logistic Regression
+
+$$
+p_i = f(\mathbf{x}_i ; \beta) = \frac{exp(\mathbf{x_i'\beta})}{1 + exp(\mathbf{x_i'\beta})}
+$$
+
+Equivalently,
+
+$$
+logit(p_i) = log(\frac{p_i}{1-p_i}) = \mathbf{x_i'\beta}
+$$
+
+where $\frac{p_i}{1+p_i}$is the **odds**.
+
+In this form, the model is specified such that **a function of the mean response is linear**. Hence, **Generalized Linear Models**
+
+
+# **Logistic Regression: Interpretation of** betas
+
+For single regressor, the model is
+
+$$
+logit\{\hat{p}_{x_i}\} \equiv logit (\hat{p}_i) = \log(\frac{\hat{p}_i}{1 - \hat{p}_i}) = \hat{\beta}_0 + \hat{\beta}_1 x_i
+$$
+
+When $x= x_i + 1$
+
+$$
+logit\{\hat{p}_{x_i +1}\} = \hat{\beta}_0 + \hat{\beta}(x_i + 1) = logit\{\hat{p}_{x_i}\} + \hat{\beta}_1
+$$
+
+Then,
+
+$$
+logit\{\hat{p}_{x_i +1}\} - logit\{\hat{p}_{x_i}\} = log\{odds[\hat{p}_{x_i +1}]\} - log\{odds[\hat{p}_{x_i}]\}$$
+$$
+= log(\frac{odds[\hat{p}_{x_i + 1}]}{odds[\hat{p}_{x_i}]}) = \hat{\beta}_1
+$$
+
+and
+
+$$
+exp(\hat{\beta}_1) = \frac{odds[\hat{p}_{x_i + 1}]}{odds[\hat{p}_{x_i}]}
+$$
+
+# the estimated **odds ratio**
+
+the estimated odds ratio, when there is a difference of c units in the regressor x, is $exp(c\hat{\beta}_1)$. When there are multiple covariates, $exp(\hat{\beta}_k)$ is the estimated odds ratio for the variable $x_k$, assuming that all of the other variables are held constant.
+
+*Inference on the Mean Response**
+
+Let $x_h = (1, x_{h1}, ...,x_{h,p-1})'$. Then
+
+$$
+\hat{p}_h = \frac{exp(\mathbf{x'_h \hat{\beta}})}{1 + exp(\mathbf{x'_h \hat{\beta}})}
+$$
+
+and $s^2(\hat{p}_h) = \mathbf{x'_h[I(\hat{\beta})]^{-1}x_h}$
+
+For new observation, we can have a cutoff point to decide whether y = 0 or 1.
+
+# setup
+```{r cars}
+library(tidyverse)
+
+df<-readxl::read_xlsx("logistic.xlsx") |> 
+  mutate_if(is.character,as.factor) |> 
+  rename(SEX="SEX JAN",
+         STATUS="Default Status")
+df
+```
+
+#
++ CBZ is considering to develop a model that predicts the default experience of their loan books.A statistician was assigned to develop of prob of default,default and non-default,The factors that will be considered to influence.  
+
+EXPOSURE,SEX,MARIT,PROFFESSION,GROSSINCOME,AGEGROUP As predictor variables explaining all the terms
+
+#
+```{r}
+options(scipen = 999)
+library(equatiomatic)
+mod1<-glm(STATUS~.,data=df,family=binomial)
+summary(mod1)
+```
+
+#
+```{r,eval=FALSE}
+extract_eq(mod1,greek_colors = "blue",wrap=TRUE,terms_per_line = 2,use_coefs = TRUE) 
+```
+$$
+\begin{aligned}
+\log\left[ \frac { \widehat{P( \operatorname{Default\ Status} = \operatorname{1} )} }{ 1 - \widehat{P( \operatorname{Default\ Status} = \operatorname{1} )} } \right] &= -2.14 + 0(\operatorname{`RTGS\ EXPOSURE`})\ - \\
+&\quad 0.02(\operatorname{`SEX\ JAN`}_{\operatorname{MALE}}) - 12.87(\operatorname{`Marital\ Status`}_{\operatorname{Engaged}})\ - \\
+&\quad 0.91(\operatorname{`Marital\ Status`}_{\operatorname{Married}}) - 2.28(\operatorname{`Marital\ Status`}_{\operatorname{Other}})\ - \\
+&\quad 1.06(\operatorname{`Marital\ Status`}_{\operatorname{Single}}) - 0.32(\operatorname{Profession}_{\operatorname{White\ Collar}})\ + \\
+&\quad 0(\operatorname{`Gross\ Income`}) + 0.34(\operatorname{`Age\ Group`}_{\operatorname{30-39}})\ + \\
+&\quad 0.82(\operatorname{`Age\ Group`}_{\operatorname{40-49}}) + 0.57(\operatorname{`Age\ Group`}_{\operatorname{50-59}})\ + \\
+&\quad 1.02(\operatorname{`Age\ Group`}_{\operatorname{60-69}}) - 11.68(\operatorname{`Age\ Group`}_{\operatorname{70+}})
+\end{aligned}
+$$
+
+# null model
+
+- model with no dependent variables
+```{r}
+model1<-glm(STATUS~1,data=df,family=binomial)
+summary(model1)
+```
+
+# model with sex
+```{r}
+model2<-glm(STATUS ~ SEX,data=df,family=binomial)
+summary(model2)
+```
+
+# compare model with sex and null model
+```{r}
+lrt<-anova(model1,model2,test="LRT")
+lrt
+```
+
+# model with marital status
+```{r}
+model3<-glm(STATUS ~ `Marital Status`,data=df,family=binomial)
+summary(model3)
+```
+
+# compare null model with marital status model
+```{r}
+LRT1<-anova(model3,model1,test="LRT")
+LRT1
+```
+
+# add exposure to marital status model
+```{r}
+model5<-glm(STATUS ~ `RTGS EXPOSURE`+ `Marital Status`,data=df,family=binomial)
+
+summary(model5)
+```
+
+# compare model with marital status to the one with both
+```{r}
+LRT1<-anova(model3,model5,test="LRT")
+LRT1
+```
+
+# compare marital status model with model containing both
+```{r}
+model6<-glm(STATUS ~ `RTGS EXPOSURE`+`Marital Status`+`Age Group`,data=df,family=binomial)
+summary(model6)
+```
+# compare model with marital status to the one with both
+```{r}
+LRT1<-anova(model5,model6,test="LRT")
+LRT1
+```
+- age group is insignificant so we remove it
+
+# lets add Gross income
+```{r}
+model7<-glm(STATUS ~ `RTGS EXPOSURE`+`Marital Status` + `Gross Income` ,data=df,family=binomial)
+summary(model7)
+```
+
+# compare model with gross income
+```{r}
+LRT1<-anova(model5,model7,test="LRT")
+LRT1
+```
+- final model should include gross income apparently
+- for sake of progress model with gross income is appropriate but we will use the one we used in the lecture
+ 
+# final model according to lecture
+
+```{r}
+model7<-glm(STATUS ~ `RTGS EXPOSURE`+`Marital Status`,data=df,family=binomial)
+summary(model7)
+```
+
+# equation
+
+```{r ,eval=FALSE}
+extract_eq(model7,terms_per_line = 1,use_coefs = TRUE,wrap=TRUE)
+```
+$$
+\begin{aligned}
+\log\left[ \frac { \widehat{P( \operatorname{STATUS} = \operatorname{1} )} }{ 1 - \widehat{P( \operatorname{STATUS} = \operatorname{1} )} } \right] &= -1.83\ + \\
+&\quad 0(\operatorname{`RTGS\ EXPOSURE`})\ - \\
+&\quad 13.08(\operatorname{`Marital\ Status`}_{\operatorname{Engaged}})\ - \\
+&\quad 0.99(\operatorname{`Marital\ Status`}_{\operatorname{Married}})\ - \\
+&\quad 2.35(\operatorname{`Marital\ Status`}_{\operatorname{Other}})\ - \\
+&\quad 1.25(\operatorname{`Marital\ Status`}_{\operatorname{Single}})
+\end{aligned}
+$$
+
+# calculation of probabilities
+$$P_i=\frac{1}{1+e^-{(\beta_0+\sum^n_{i=1}\beta_iX_i)}}$$
+- e.g for client who is married with no information at the bank
+```{r}
+1/(1+exp(-1.83-13.08076))
+```
+
+# convert log odds to odds
+```{r}
+coef(model7) |> exp()
+```
+
+# reporting the model output
+```{r}
+report::report(model7)
+```   
+
+

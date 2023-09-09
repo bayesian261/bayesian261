@@ -1,0 +1,325 @@
+---
+title: 'Introduction to R : Part 2'
+author: Bongani Ncube
+date: '2023-09-09'
+slug: introduction-to-r-part-2
+categories:
+  - rstudio
+  - R
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-09-09T13:52:18+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+# Working with dataframes
+
+The dataframe is the most common data structure used by analysts in R, due to its similarity to data tables found in databases and spreadsheets.  We will work almost entirely with dataframes in this book, so let's get to know them.
+
+### Loading and tidying data in dataframes
+
+`r if (knitr::is_latex_output()) '\\index{R!loading data}'`To work with data in R, you usually need to pull it in from an outside source into a dataframe^[R also has some built-in data sets for testing and playing with.  For example, check out `mtcars` by typing it into the terminal, or type `data()` to see a full list of built-in data sets.].  R facilitates numerous ways of importing data from simple `.csv` files, from Excel files, from online sources or from databases.  Let's load a data set that we will use later---the `loan_data` data set,   The `read.csv()` function can accept a URL or a path address of the file.
+
+# read in data
+```{r}
+# PATH TO data set 
+PATH <- "D:/ALLSTUFF/BONGANI-NCUBE/loan_data.csv"
+# load the data set and store it as a dataframe called loan_data
+#loan_data <- readr::read_csv(PATH)
+loan_data<-read.csv(PATH)
+```
+
+# head() and dim()
+
+We might not want to display this entire data set before knowing how big it is.  We can view the dimensions, and if it is too big to display, we can use the `head()` function to display just the first few rows.
+
+##
+
+```{r}
+dim(loan_data)
+
+# hundreds of rows, so view first few
+head(loan_data)
+```
+
+
+We can view a specific column by using `$`, and we can use square brackets to view a specific entry.   For example if we wanted to see the 6th entry of the `loan_amnt` column:
+
+##
+```{r}
+loan_data$loan_amnt[6]
+```
+
+#
+
+Alternatively, we can use a `[row, column]` index to get a specific entry in the dataframe.
+
+##
+```{r}
+loan_data[34, 4]
+```
+
+We can take a look at the data types using `str()`.
+
+##
+```{r}
+str(loan_data)
+```
+
+#
+
+We can also see a statistical summary of each column using `summary()`, which tells us various statistics depending on the type of the column.
+
+```{r}
+summary(loan_data)
+```
+
+#
+
+Note that there is missing data in this dataframe, indicated by `NA`s in the summary.  Missing data is identified by a special `NA` value in R.  This should not be confused with `"NA"`, which is simply a character string.  The function `is.na()` will look at all values in a vector or dataframe and return `TRUE` or `FALSE` based on whether they are `NA` or not.  By adding these up using the `sum()` function, it will take `TRUE` as 1 and `FALSE` as 0, which effectively provides a count of missing data.
+
+```{r}
+sum(is.na(loan_data))
+```
+
+#
+
+This is a small number of `NA`s given the dimensions of our data set and we might want to remove the rows of data that contain NAs.  The easiest way is to use the `complete.cases()` function, which identifies the rows that have no `NA`s, and then we can select those rows from the dataframe based on that condition.  Note that you can overwrite objects with the same name in R.
+
+```{r}
+loan_data <- loan_data[complete.cases(loan_data), ]
+# confirm no NAs
+sum(is.na(loan_data))
+```
+
+#
+
+We can see the unique values of a vector or column using the `unique()` function.
+```{r}
+unique(loan_data$home_ownership)
+```
+
+If we need to change the type of a column in a dataframe, we can use the `as.numeric()`, `as.character()`, `as.logical()` or `as.factor()` functions.  For example, given that there are only four unique values for the `loan_status` column, we may want to convert it to a factor.
+
+##
+```{r}
+loan_data$loan_status <- as.factor(loan_data$loan_status)
+str(loan_data)
+```
+
+# Manipulating dataframes
+
+Dataframes can be subsetted to contain only rows that satisfy specific conditions.
+```{r}
+loan_amnt_10000 <- subset(loan_data, subset = loan_amnt == 10000)
+loan_amnt_10000
+```
+
+#
+
+Note the use of `==`, which is used in many programming languages, to test for precise equality.  Similarly we can select columns based on inequalities (`>` for 'greater than'\&zwj;, `<` for 'less than'\&zwj;, `>=` for 'greater than or equal to'\&zwj;, `<=` for 'less than or equal to'\&zwj;, or `!=` for 'not equal to').  For example:
+
+```{r}
+high_loan_amnt <- subset(loan_data, subset = loan_amnt >= 20000)
+head(high_loan_amnt)
+```
+
+#
+
+To select specific columns use the `select` argument.
+
+```{r}
+loan_data_loan_amnt_status <- subset(loan_data, 
+                                 select = c("loan_amnt", "loan_status"))
+head(loan_data_loan_amnt_status)
+```
+#
+
+Two dataframes with the same column names can be combined by their rows.
+
+```{r}
+low_loan_amnt <- subset(loan_data, subset = loan_amnt < 8000)
+
+# bind the rows of low_loan_amnt and high_loan_amnt together
+low_and_high_loan_amnt = rbind(low_loan_amnt, high_loan_amnt)
+head(low_and_high_loan_amnt)
+```
+#
+Two dataframes with different column names can be combined by their columns.
+
+```{r}
+# two dataframes with two columns each
+loan_amnt_perf <- subset(loan_data, 
+                     select = c("loan_amnt", "loan_status"))
+prom_custrate <- subset(loan_data, 
+                        select = c("home_ownership", "grade"))
+
+# bind the columns to create a dataframe with four columns
+full_df <- cbind(loan_amnt_perf, prom_custrate)
+head(full_df)
+```
+
+# Functions, packages and libraries
+
+In the code so far we have used a variety of functions.  For example `head()`, `subset()`, `rbind()`.  Functions are operations that take certain defined inputs and return an output.  Functions exist to perform common useful operations.
+
+
+
+# Help with functions
+
+Most functions in R have excellent help documentation.  To get help on the `head()` function, type `help(head)` or `?head`.  This will display the results in the Help browser window in RStudio.  Alternatively you can open the Help browser window directly in RStudio and do a search there. 
+
+# The help page normally shows the following:
+
+* Description of the purpose of the function
+* Usage examples, so you can quickly see how it is used
+* Arguments list so you can see the names and order of arguments
+* Details or notes on further considerations on use
+* Expected value of the output (for example `head()` is expected to return a similar object to its first input `x`)
+* Examples to help orient you further (sometimes examples can be very abstract in nature and not so helpful to users)
+
+# Installing packages
+
+Before an external package can be used, it must be installed into your package library using `install.packages()`.  So to install `MASS`, type `install.packages("MASS")` into the console.  This will send R to the main internet repository for R packages (known as CRAN). It will find the right version of `MASS` for your operating system and download and install it into your package library.  If `MASS` needs other packages in order to work, it will also install these packages.  
+
+If you want to install more than one package, put the names of the packages inside a character vector---for example:
+
+```{r, eval = FALSE}
+my_packages <- c("MASS", "DescTools", "dplyr")
+install.packages(my_packages)
+```  
+
+# 
+
+Once you have installed a package, you can see what functions are available by calling for help on it, for example using `help(package = MASS)`.  
+
+## Using packages
+
+Once you have installed a package into your package library, to use it in your R session you need to load it using the  `library()` function. For example, to load `MASS` after installing it, use `library(MASS)`.  Often nothing will happen when you use this command, but rest assured the package has been loaded and you can start to use the functions inside it.  Sometimes when you load the package a series of messages will display, usually to make you aware of certain things that you need to keep in mind when using the package. If you have not installed the package, the `library()` command will f
+fail.
+ 
+# 
+##
+
+Problems can occur when you load packages that contain functions with the same name as functions that already exist in your R session.  Often the messages you see when loading a package will alert you to this.  When R is faced with a situation where a function exists in multiple packages you have loaded, R always defaults to the function in *the most recently loaded* package.  This may not always be what you intended.
+
+#
+
+One way to completely avoid this issue is to get in the habit of *namespacing* your functions.  To namespace, you simply use `package::function()`, so to safely call `stepAIC()` from `MASS`, you use `MASS::stepAIC()`.  Most of the time in this book when a function is being called from a package outside base R, I use namespacing to call that function.  This should help avoid confusion about which packages are being used for which functions.
+
+# The pipe operator
+
+ The pipe operator makes code more natural to read and write and reduces the typical computing problem of many nested operations inside parentheses.  The pipe operator comes inside many R packages, particularly `magrittr` and `dplyr`.
+
+As an example, imagine we wanted to do the following two operations in one command:
+
+1. Subset `loan_data` to only the `loan_amnt` values of those with `loan_amnt` less than 15000
+2. Take the mean of those values
+
+#
+
+In base R, one way to do this is:
+
+##
+```{r}
+mean(subset(loan_data$loan_amnt, subset = loan_data$loan_amnt < 15000))
+```
+
+This is nested and needs to be read from the inside out in order to align with the instructions.  The pipe operator `%>%` takes the command that comes before it and places it inside the function that follows it (by default as the first argument). This reduces complexity and allows you to follow the logic more clearly.
+
+#
+##
+```{r}
+# load magrittr library to get the pipe operator
+library(magrittr)
+# use the pipe operator to lay out the steps more logically
+subset(loan_data$loan_amnt, subset = loan_data$loan_amnt < 15000) %>% 
+  mean() 
+```
+
+This can be extended to perform arbitrarily many operations in one piped command.
+
+##
+```{r}
+loan_data$loan_amnt %>% # start with all data
+  subset(subset = loan_data$loan_amnt < 15000) %>% # get the subsetted data
+  mean() %>% # take the mean value
+  round() # round to the nearest integer
+
+```
+
+# Errors, warnings and messages
+
+getting familiar with R can be frustrating at the beginning if you have never programmed before.  You can expect to regularly see messages, warnings or errors in response to your commands.  I encourage you to regard these as your friend rather than your enemy.  It is very tempting to take the latter approach when you are starting out, but over time I hope you will appreciate some wisdom from my words.
+
+*Errors* are serious problems which usually result in the halting of your code and a failure to return your requested output.  They usually come with an indication of the source of the error, and these can sometimes be easy to understand and sometimes frustratingly vague and abstract.  For example, an easy-to-understand error is:
+
+#
+##
+```{r, eval = FALSE}
+subset(loan_data, subset = loan_amnt = 12000)
+```
+
+```
+Error: unexpected '=' in "subset(loan_data, subset = loan_amnt ="
+```
+
+This helps you see that you have used `loan_amnt = 12000` as a condition to subset your data, when you should have used `loan_amnt == 720` for precise equality.
+
+#
+A much more challenging error to understand is:
+
+##
+
+```{r, eval = FALSE}
+head[loan_data]
+```
+```
+Error in head[loan_data] : object of type 'closure' is not subsettable
+```
+
+When first faced with an error that you can't understand, try not to get frustrated and proceed in the knowledge that it usually can be fixed easily and quickly.  Often the problem is much more obvious than you think, and if not, there is still a 99% likelihood that others have made this error and you can read about it online.  The first step is to take a look at your code to see if you can spot what you did wrong.  In this case, you may see that you have used square brackets `[]` instead of parentheses `()` when calling your `head()` function.  
+

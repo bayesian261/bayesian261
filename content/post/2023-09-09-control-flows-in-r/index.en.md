@@ -1,0 +1,432 @@
+---
+title: Control flows in R
+author: Bongani Ncube
+date: '2023-09-09'
+slug: control-flows-in-r
+categories:
+  - Programming
+  - Rstats
+  - introduction
+  - classification
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-09-09T12:16:40+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="{{< blogdown/postref >}}index.en_files/htmlwidgets/htmlwidgets.js"></script>
+<script src="{{< blogdown/postref >}}index.en_files/viz/viz.js"></script>
+<link href="{{< blogdown/postref >}}index.en_files/DiagrammeR-styles/styles.css" rel="stylesheet" />
+<script src="{{< blogdown/postref >}}index.en_files/grViz-binding/grViz.js"></script>
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+Every time some operations have to be repeated, a *loop* may come in handy. Loops are good for:
+
+- Doing something for every element of an object;
+- Doing something until the processed data runs out;
+- Doing something for every file in a folder;
+- Doing something that can fail, until it succeeds;
+- Iterating a calculation until it reaches convergence.
+
+# in this series we look at :
+
+- `for loops`
+- We will also dive into the `apply()` family functions, which are interesting function-based alternatives to `for() {}` loops.
+
+# lets load some data for later on;
+
+``` r
+# take a few rows
+loan_data<-readr::read_csv("loan_data_cleaned.csv") |> 
+  select(-1) |> 
+  sample_n(size=15) |> 
+  as.data.frame()
+```
+
+# `for` loops
+
+A `for()` loop works in the following way:
+
+``` r
+for(i in sequence) {
+expression
+}
+```
+
+# 
+
+<div id="htmlwidget-1" style="width:35%;height:auto;" class="grViz html-widget "></div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       rankdir = \"TB\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"circle\",\n      fixedsize = \"true\",\n      width = \"0.5\",\n      style = \"filled\",\n      fillcolor = \"aliceblue\",\n      color = \"gray70\",\n      fontcolor = \"gray50\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray80\",\n     arrowsize = \"0.5\"]\n\n  \"1\" [label = \" \", shape = \"circle\", style = \"solid\", fontname = \"Helvetica\", fontsize = \"10\", fixedsize = \"FALSE\", color = \"mediumblue\", width = \"0.1\", fillcolor = \"#F0F8FF\", fontcolor = \"#000000\"] \n  \"2\" [label = \"Last item\nreached?\", shape = \"diamond\", style = \"solid\", fontname = \"Helvetica\", fontsize = \"10\", fixedsize = \"FALSE\", color = \"mediumblue\", width = \"0.1\", fillcolor = \"#F0F8FF\", fontcolor = \"#000000\"] \n  \"3\" [label = \"expression\nfor() \nbody\", shape = \"rectangle\", style = \"solid\", fontname = \"Helvetica\", fontsize = \"10\", fixedsize = \"FALSE\", color = \"mediumblue\", width = \"0.1\", fillcolor = \"#F0F8FF\", fontcolor = \"#000000\"] \n  \"4\" [label = \"  \", shape = \"circle\", style = \"filled\", fontname = \"Helvetica\", fontsize = \"10\", fixedsize = \"FALSE\", color = \"mediumblue\", width = \"0.1\", fillcolor = \"#F0F8FF\", fontcolor = \"#000000\"] \n\"1\"->\"2\" [label = \" \", fontsize = \"10\", color = \"dimgrey\", decorate = \"TRUE\", tailport = \"s\", headport = \"n\"] \n\"2\"->\"3\" [label = \" if FALSE\", fontsize = \"10\", color = \"dimgrey\", decorate = \"TRUE\", tailport = \"w\", headport = \"w\"] \n\"2\"->\"4\" [label = \"  if TRUE, exit loop\", fontsize = \"10\", color = \"dimgrey\", decorate = \"TRUE\", tailport = \"e\", headport = \"n\"] \n\"3\"->\"2\" [label = \" \", fontsize = \"10\", color = \"dimgrey\", decorate = \"TRUE\", tailport = \"e\", headport = \"s\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+# note
+
+The letter `i` can be replaced with any variable name, `sequence` can be elements or the position of these elements, and `expression` can be anything. Try the examples below:
+
+# example 1
+
+``` r
+for(a in c("Hello", 
+           "R/Posit", 
+           "group members")) {
+  print(a)
+}
+#> [1] "Hello"
+#> [1] "R/Posit"
+#> [1] "group members"
+```
+
+# example 2
+
+``` r
+for(z in 1:4) {
+  a <- rnorm(n = 1, 
+             mean = 5 * z, 
+             sd = 2)
+  print(a)
+}
+#> [1] 5.095703
+#> [1] 10.85665
+#> [1] 11.36553
+#> [1] 17.66163
+```
+
+# example 3
+
+In this next example, every instance of `m` is being replaced by each number between `1` and `7`, until it reaches the last element of the sequence
+
+``` r
+y <- 2
+for(m in 1:6) {
+  print(y*m)
+}
+#> [1] 2
+#> [1] 4
+#> [1] 6
+#> [1] 8
+#> [1] 10
+#> [1] 12
+```
+
+# `for` loops on different classes
+
+As expected, you can use `for()` loops in different object types and classes, such as a `list`. Let us take the example below, where we are creating the `elements` object list.
+
+``` r
+(elements <- list(a = 1:3, 
+                  b = 4:10, 
+                  c = 7:-1))
+#> $a
+#> [1] 1 2 3
+#> 
+#> $b
+#> [1]  4  5  6  7  8  9 10
+#> 
+#> $c
+#> [1]  7  6  5  4  3  2  1  0 -1
+```
+
+# 
+
+Now, let us `print` the double of every element of the list:
+
+``` r
+for(element in elements) {
+  print(element*2)
+}
+#> [1] 2 4 6
+#> [1]  8 10 12 14 16 18 20
+#> [1] 14 12 10  8  6  4  2  0 -2
+```
+
+# `for` and `if` together
+
+``` r
+x <- c(2, 5, 3, 9, 6,8)
+count <- 0
+```
+
+``` r
+for(val in x) {
+  if(val %% 2 == 0) {
+    count <- count + 1
+  }
+}
+print(count)
+#> [1] 3
+
+## basically this counts the number of even numbers(numbers divisible by 2)
+```
+
+# `for` with a real dataset
+
+`for()` loops are often used to loop over a dataset. We will use loops to perform functions on the `loan_data` . To load and see the first 6 rows of the `loan data` dataset, execute the following code:
+
+``` r
+head(loan_data)
+#>   loan_status loan_amnt grade home_ownership annual_inc age emp_cat  ir_cat
+#> 1           0      1000     A           RENT      51000  23    0-15     0-8
+#> 2           0      3000     A       MORTGAGE      67000  25    0-15     0-8
+#> 3           0     12000     C           RENT      53000  28    0-15   13.5+
+#> 4           0      7000     C           RENT      97000  33    0-15 11-13.5
+#> 5           0     20000     B       MORTGAGE      48000  29    0-15 Missing
+#> 6           0      6000     B           RENT      30000  24    0-15 11-13.5
+```
+
+# Now, to recursively print loan amount, let us do this:
+
+``` r
+for(i in 1:length(loan_data[,1])) { # for each row in the loan_data dataset
+  print(loan_data$loan_amnt[i]) # print the loan amount
+}
+#> [1] 1000
+#> [1] 3000
+#> [1] 12000
+#> [1] 7000
+#> [1] 20000
+#> [1] 6000
+#> [1] 5200
+#> [1] 9000
+#> [1] 15400
+#> [1] 16000
+#> [1] 13000
+#> [1] 10000
+#> [1] 4000
+#> [1] 7500
+#> [1] 18000
+```
+
+# first five rows
+
+``` r
+for(i in 1:5) { 
+  print(loan_data$loan_amnt[i]) 
+}
+#> [1] 1000
+#> [1] 3000
+#> [1] 12000
+#> [1] 7000
+#> [1] 20000
+```
+
+# what about last 5
+
+``` r
+for (i in 11:15) { 
+  print(loan_data$loan_amnt[i]) 
+}
+#> [1] 13000
+#> [1] 10000
+#> [1] 4000
+#> [1] 7500
+#> [1] 18000
+```
+
+# Now, let us obtain the loan amount for defaulters only
+
+``` r
+for(i in 1:length(loan_data[,1])) { # for each row in the loan_data dataset
+  if(loan_data$loan_status[i] == 1) { # if the type is "0"
+    print(loan_data$loan_amnt[i]) # print the loan_amount
+  }
+}
+#> [1] 10000
+```
+
+# To loop over the number of rows of a data frame, we can use the function `nrow()`:
+
+``` r
+for(i in 1:nrow(loan_data)) {
+  # for each row in
+  # the loan_data dataset
+  print(loan_data$loan_amnt[i])
+  # print the loan_amount
+}
+#> [1] 1000
+#> [1] 3000
+#> [1] 12000
+#> [1] 7000
+#> [1] 20000
+#> [1] 6000
+#> [1] 5200
+#> [1] 9000
+#> [1] 15400
+#> [1] 16000
+#> [1] 13000
+#> [1] 10000
+#> [1] 4000
+#> [1] 7500
+#> [1] 18000
+```
+
+# To perform operations on the elements of one column, we can directly iterate over it.
+
+``` r
+for(p in loan_data$loan_amnt) {
+  # for each element of
+  # the column "conc" of
+  # the loan_data df
+  print(p)
+  # print the p-th element
+}
+#> [1] 1000
+#> [1] 3000
+#> [1] 12000
+#> [1] 7000
+#> [1] 20000
+#> [1] 6000
+#> [1] 5200
+#> [1] 9000
+#> [1] 15400
+#> [1] 16000
+#> [1] 13000
+#> [1] 10000
+#> [1] 4000
+#> [1] 7500
+#> [1] 18000
+```
+
+# 
+
+The expression within the loop can be almost anything and is usually a compound statement containing many commands.
+
+``` r
+for(i in c(2,5:6)) { # for i in 4 to 5
+  print(colnames(loan_data)[i])
+  print(mean(loan_data[,i])) # print the mean of that column from the loan_data dataset
+}
+#> [1] "loan_amnt"
+#> [1] 9806.667
+#> [1] "annual_inc"
+#> [1] 57206.67
+#> [1] "age"
+#> [1] 28.06667
+```
+
+# The `apply()` family
+
+`R` disposes of the `apply()` function family, which consists of iterative functions that aim at **minimizing your need to explicitly create loops**.
+
+## `apply()`
+
+Let us consider that we have a `height` matrix containing the height (in metres) that was taken from five individuals (in rows) at four different times (as columns).
+
+``` r
+(height <- matrix(runif(20, 1.5, 2),
+                  nrow = 5,
+                  ncol = 4))
+#>          [,1]     [,2]     [,3]     [,4]
+#> [1,] 1.763385 1.590613 1.863847 1.501643
+#> [2,] 1.534095 1.622937 1.635874 1.962806
+#> [3,] 1.877148 1.669160 1.586319 1.540396
+#> [4,] 1.901861 1.691776 1.924880 1.568207
+#> [5,] 1.789904 1.597716 1.837416 1.621756
+```
+
+## We would like to obtain the average height at each time step.
+
+One option is to use a `for() {}` loop to iterate from column `1` to `4`, use the function `mean()` to calculate the average of the values, and sequentially store the output value in a vector.
+
+Alternatively, we can use the `apply()` function to set it to apply the `mean()` function to every column of the `height` matrix. See the example below:
+
+# 
+
+``` r
+apply(X = height,
+      MARGIN = 2,
+      FUN = mean)
+#> [1] 1.773279 1.634440 1.769667 1.638962
+```
+
+> The `apply()` function begins with three arguments main arguments: `X`, which will take a matrix or a data frame; `FUN`, which can be any function that will be applied to the `MARGIN`s of `X`; and `MARGIN` which will take `1` for row-wise computations, or `2` for column-wise computations.
+
+# `lapply()`
+
+`lapply()` applies a function to every element of a `list`.
+
+The output returned is also `list` (explaining the “`l`” in `lapply`) and has the same number of elements as the object passed to it.
+
+``` r
+SimulatedData <- list(
+  SimpleSequence = 1:4,
+  Norm10 = rnorm(10),
+  Norm20 = rnorm(20, 1),
+  Norm100 = rnorm(100, 5)
+)
+```
+
+# 
+
+``` r
+# Apply mean to each element of the list
+
+lapply(X = SimulatedData, 
+       FUN = mean)
+#> $SimpleSequence
+#> [1] 2.5
+#> 
+#> $Norm10
+#> [1] -0.1762098
+#> 
+#> $Norm20
+#> [1] 1.039137
+#> 
+#> $Norm100
+#> [1] 4.983601
+```
+
+> `lapply()` operations done in objects different from a `list` will be coerced to a `list` via `base::as.list()`.
+
+# `sapply()`
+
+`sapply()` is a ‘wrapper’ function for `lapply()`, but returns a simplified output as a `vector`, instead of a `list`.
+
+``` r
+SimulatedData <- list(SimpleSequence = 1:4,
+                      Norm10 = rnorm(10),
+                      Norm20 = rnorm(20, 1),
+                      Norm100 = rnorm(100, 5))
+
+# Apply mean to each element of the list
+sapply(SimulatedData, mean)
+#> SimpleSequence         Norm10         Norm20        Norm100 
+#>     2.50000000    -0.03339704     0.95155936     5.00083959
+```
+
+# `mapply()`
+
+`mapply()` works as a multivariate version of `sapply()`.
+
+It will apply a given function to the first element of each argument first, followed by the second element, and so on. For example:
+
+``` r
+lilySeeds <- c(80, 65, 89, 23, 21)
+poppySeeds <- c(20, 35, 11, 77, 79)
+
+# Output
+mapply(sum, lilySeeds, poppySeeds)
+#> [1] 100 100 100 100 100
+```
+
+# `tapply()`
+
+`tapply()` is used to apply a function over subsets of a vector.
+
+It is primarily used when the dataset contains dataset contains different groups (*i.e.* levels/factors) and we want to apply a function to each of these groups.
+
+``` r
+# get the mean loan_amnt by grade
+tapply(loan_data$loan_amnt, loan_data$grade, FUN = mean)
+#>         A         B         C 
+#>  4333.333 11100.000 11280.000
+```
