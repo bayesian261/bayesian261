@@ -98,6 +98,7 @@ In reality, we often cannot meet these criteria. In many cases, linear models ar
 knitr::include_graphics("images/linreg_bad.png")
 ```
 
+
 # What's next
 
 So, how can we fit a better model? To answer this question, we must first consider what the regression  model is trying to do. The linear model is trying to fit the best __straight line__ that passes through the middle of the data, _without __overfitting___ the data, which is what would happen if we simply drew a line between each point and its neighbours. Linear models do this by finding the best fit straight line that passes through the data.
@@ -106,6 +107,7 @@ In the same way, additive models fit a curve through the data, while controlling
 
 
 #
+
 Let us use an example to demonstrate the difference between a linear regression and an additive model.
 
 ```{r}
@@ -169,7 +171,7 @@ Are the assumptions of linear regression listed met in this case? As you may hav
 3.  The variance of the error is _not_ homoscedastic.
 4.  The errors are _not_ independent of each other.
 
-## we could manually specify a linear model with multiple predictor variables to try to accommodate this non-linear response. For example, we could try to build this linear model with multiple predictors:
+> we could manually specify a linear model with multiple predictor variables to try to accommodate this non-linear response. For example, we could try to build this linear model with multiple predictors:
 
 $$y_i = \beta_0 + \beta_1(x_{1,i}) + \beta_2(x_{2,i}) + ... + \epsilon$$
 

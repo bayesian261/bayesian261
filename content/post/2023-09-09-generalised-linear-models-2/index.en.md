@@ -39,7 +39,12 @@ Let
 The link between the mean response (probability) `\(p_{ij}\)` and a linear function of the covariates
 
 $$
-\eta_{ij} = \mathbf{x'_i \beta_j} = \log \frac{p_{ij}}{p_{i1}}, j = 2,..,J
+\eta_{ij} = \mathbf{x'_i \beta_j} 
+$$
+
+which equals
+
+`$$\log \frac{p_{ij}}{p_{i1}}, j = 2,..,J
 $$
 
 We compare `\(p_{ij}\)` to the baseline `\(p_{i1}\)`, suggesting

@@ -27,6 +27,7 @@ image:
 #   Otherwise, set `projects = []`.
 projects: []
 ---
+
 <script src="//yihui.org/js/math-code.js" defer></script>
 <!-- Just one possible MathJax CDN below. You may use others. -->
 <script defer
@@ -200,22 +201,20 @@ $$
 When `\(x= x_i + 1\)`
 
 $$
-logit\{\hat{p}_{x_i +1}\} = \hat{\beta}_0 + \hat{\beta}(x_i + 1) = logit\{\hat{p}_{x_i}\} + \hat{\beta}_1
-$$
+logit\{\hat{{p}_{x_i +1}\}} = \hat{\beta_0} + \hat{\beta}(x_i + 1)$$`
+
+which is equal to 
+`$$logit\{\hat{p}_{x_i}\} + \hat{\beta}_1$$`
 
 Then,
 
 $$
-logit\{\hat{p}_{x_i +1}\} - logit\{\hat{p}_{x_i}\} = log\{odds[\hat{p}_{x_i +1}]\} - log\{odds[\hat{p}_{x_i}]\}$$`
-$$
-= log(\frac{odds[\hat{p}_{x_i + 1}]}{odds[\hat{p}_{x_i}]}) = \hat{\beta}_1
-$$
+logit{\hat{p_{x_i +1}}} - logit{\hat{p_{x_i}}}$$ 
 
-and
+is equal to
 
-$$
-exp(\hat{\beta}_1) = \frac{odds[\hat{p}_{x_i + 1}]}{odds[\hat{p}_{x_i}]}
-$$
+`$$log\{odds[\hat{p}_{x_i +1}]\} - log\{odds[\hat{p}_{x_i}]\}$$`
+
 
 # the estimated **odds ratio**
 
@@ -313,17 +312,6 @@ summary(mod1)
 ```r
 extract_eq(mod1,greek_colors = "blue",wrap=TRUE,terms_per_line = 2,use_coefs = TRUE) 
 ```
-$$
-`\begin{aligned}
-\log\left[ \frac { \widehat{P( \operatorname{Default\ Status} = \operatorname{1} )} }{ 1 - \widehat{P( \operatorname{Default\ Status} = \operatorname{1} )} } \right] &= -2.14 + 0(\operatorname{`RTGS\ EXPOSURE`})\ - \\
-&\quad 0.02(\operatorname{`SEX\ JAN`}_{\operatorname{MALE}}) - 12.87(\operatorname{`Marital\ Status`}_{\operatorname{Engaged}})\ - \\
-&\quad 0.91(\operatorname{`Marital\ Status`}_{\operatorname{Married}}) - 2.28(\operatorname{`Marital\ Status`}_{\operatorname{Other}})\ - \\
-&\quad 1.06(\operatorname{`Marital\ Status`}_{\operatorname{Single}}) - 0.32(\operatorname{Profession}_{\operatorname{White\ Collar}})\ + \\
-&\quad 0(\operatorname{`Gross\ Income`}) + 0.34(\operatorname{`Age\ Group`}_{\operatorname{30-39}})\ + \\
-&\quad 0.82(\operatorname{`Age\ Group`}_{\operatorname{40-49}}) + 0.57(\operatorname{`Age\ Group`}_{\operatorname{50-59}})\ + \\
-&\quad 1.02(\operatorname{`Age\ Group`}_{\operatorname{60-69}}) - 11.68(\operatorname{`Age\ Group`}_{\operatorname{70+}})
-\end{aligned}`
-$$
 
 # null model
 
@@ -638,22 +626,6 @@ summary(model7)
 #> Number of Fisher Scoring iterations: 15
 ```
 
-# equation
-
-
-```r
-extract_eq(model7,terms_per_line = 1,use_coefs = TRUE,wrap=TRUE)
-```
-$$
-`\begin{aligned}
-\log\left[ \frac { \widehat{P( \operatorname{STATUS} = \operatorname{1} )} }{ 1 - \widehat{P( \operatorname{STATUS} = \operatorname{1} )} } \right] &= -1.83\ + \\
-&\quad 0(\operatorname{`RTGS\ EXPOSURE`})\ - \\
-&\quad 13.08(\operatorname{`Marital\ Status`}_{\operatorname{Engaged}})\ - \\
-&\quad 0.99(\operatorname{`Marital\ Status`}_{\operatorname{Married}})\ - \\
-&\quad 2.35(\operatorname{`Marital\ Status`}_{\operatorname{Other}})\ - \\
-&\quad 1.25(\operatorname{`Marital\ Status`}_{\operatorname{Single}})
-\end{aligned}`
-$$
 
 # calculation of probabilities
 `$$P_i=\frac{1}{1+e^-{(\beta_0+\sum^n_{i=1}\beta_iX_i)}}$$`
@@ -669,9 +641,9 @@ $$
 ```r
 coef(model7) |> exp()
 #>             (Intercept)         `RTGS EXPOSURE` `Marital Status`Engaged 
-#>          0.159896444837          0.999556861885          0.000002084946 
+#>            1.598964e-01            9.995569e-01            2.084946e-06 
 #> `Marital Status`Married   `Marital Status`Other  `Marital Status`Single 
-#>          0.371552348936          0.095623466528          0.287320599108
+#>            3.715523e-01            9.562347e-02            2.873206e-01
 ```
 
 # reporting the model output

@@ -85,7 +85,7 @@ R is an open source programming language with origins in C and FORTRAN. Advantag
 
 But more importantly, it's free.
 
-### What Is R?
+
 
 Some disadvantages:
   
@@ -96,7 +96,7 @@ Some disadvantages:
 Rstudio will help with the learning curve component.
 
 ## Getting Started in R and Rstudio
-### Getting Started in R and Rstudio
+
 
 Let's get started in Rstudio first. Select "Tools" in the menu.
 
@@ -107,7 +107,9 @@ Let's get started in Rstudio first. Select "Tools" in the menu.
 
 ###
 
-![](rstudio-global-options.png)
+```{r rstudiide, fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+knitr::include_graphics('2_Create_an_R_script2.Mod_arrow.png')
+```
 
 
 ### Getting Started in R and Rstudio

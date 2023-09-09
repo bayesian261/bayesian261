@@ -145,17 +145,12 @@ dat<-dental |>
 ```{r}
 (tab<-dat%>%
   head() |> 
-  flextable() %>%
-  flextable::set_table_properties(width = .75, layout = "autofit") %>%
-  flextable::theme_zebra() %>%
-  flextable::fontsize(size = 12) %>%
-  flextable::fontsize(size = 12, part = "header") %>%
-  flextable::align_text_col(align = "center") %>%
-  flextable::set_caption(caption = "data summary.")  %>%
-  flextable::border_outer())
+  kableExtra::kbl())
 ```
 
-# for the following graphs ill use my own format
+
+# Explanatory data analysis(EDA)
+## for the following graphs ill use my own format
 
 
 ```{r}
@@ -309,7 +304,7 @@ structure
 
 # covariance and correlation matrices
 
-```{r rstudio-id, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+```{r rstudio-id, fig.cap="Covariance Matrix", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
 
 knitr::include_graphics("covv.png")
 
@@ -333,7 +328,7 @@ $$corr(Y_1,Y_2)=\frac{cov(Y_1.Y_2)}{\sqrt{var(Y_1)\sqrt{var(Y_2}}}$$
 + Due to the fact that the magnitude of the covariance between $Y_1$ and $Y_2$ depends on their variability, we translate the covariance matrix into a correlation matrix
 
 #
-```{r rstudio-i, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+```{r rstudio-i, fig.cap="Correlation Matrix", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
 
 knitr::include_graphics("corrr.png")
 
@@ -646,22 +641,22 @@ $$Y_i \sim N(X_i\beta,V(\alpha))$$
 + the marginal mean of $Y_i$ is $E(E(Y_i|b_i))=E(X_i\beta+Z_ib_i)=X_i\beta$
 
 # Matrix D
-```{r rstudio, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+```{r rstudio, fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
 knitr::include_graphics('new1.png')
 ```
 
 # Matrix R
-```{r rstudiide, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+```{r rstudiide, fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
 knitr::include_graphics('new_r.png')
 ```
 
 # contrasting with the general linear model
-```{r rstudide, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+```{r rstudide, fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
 knitr::include_graphics('new_p.png')
 ```
 
 # cont'd
-```{r rstu-ide, fig.cap="The RStudio IDE", fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
+```{r rstu-ide, fig.align="center", echo = FALSE, out.width = if (knitr::is_latex_output()) {"65%"}}
 knitr::include_graphics('new3.png')
 ```
 
@@ -701,21 +696,4 @@ ranova(lin_0)
 + The small p-value suggests evidence of between-individual heterogeneity, which support evidence for choosing a mixed-effects model instead of a only fixed-effects model.
 
 
-
-$$
-\begin{aligned}
-  \operatorname{distance}_{i}  &\sim N \left(\alpha_{j[i]}, \sigma^2 \right) \\
-    \alpha_{j}  &\sim N \left(\mu_{\alpha_{j}}, \sigma^2_{\alpha_{j}} \right)
-    \text{, for id j = 1,} \dots \text{,J}
-\end{aligned}
-$$
-
-
-$$
-\begin{aligned}
-  \operatorname{Weight}_{i}  &\sim N \left(\alpha_{j[i]} + \beta_{1}(\operatorname{Mnth}), \sigma^2 \right) \\
-    \alpha_{j}  &\sim N \left(\gamma_{0}^{\alpha} + \gamma_{1}^{\alpha}(\operatorname{Prog}_{\operatorname{diet+exercise}}) + \gamma_{2}^{\alpha}(\operatorname{Prog}_{\operatorname{modified\ diet}}) + \gamma_{3}^{\alpha}(\operatorname{Mnth} \times \operatorname{Prog}_{\operatorname{diet+exercise}}) + \gamma_{4}^{\alpha}(\operatorname{Mnth} \times \operatorname{Prog}_{\operatorname{modified\ diet}}), \sigma^2_{\alpha_{j}} \right)
-    \text{, for ID j = 1,} \dots \text{,J}
-\end{aligned}
-$$
 

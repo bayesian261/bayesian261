@@ -1,5 +1,5 @@
 ---
-bio: My research interests include Casual Inference , Public Health , Survival Analysis, bayesian Statistics, Machine learning and mathematical modeling.
+bio: My research interests include Casual Inference , Public Health , Survival Analysis, bayesian Statistics, Machine learning and Longitudinal Data Analysis.
 education:
   courses:
   - course: Bsc in Statistics 

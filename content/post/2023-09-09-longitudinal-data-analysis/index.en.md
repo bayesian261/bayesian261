@@ -19,9 +19,8 @@ image:
   preview_only: no
 projects: []
 ---
-
-<link href="{{< blogdown/postref >}}index.en_files/tabwid/tabwid.css" rel="stylesheet" />
-<script src="{{< blogdown/postref >}}index.en_files/tabwid/tabwid.js"></script>
+<script src="{{< blogdown/postref >}}index.en_files/kePrint/kePrint.js"></script>
+<link href="{{< blogdown/postref >}}index.en_files/lightable/lightable.css" rel="stylesheet" />
 <script src="{{< blogdown/postref >}}index.en_files/kePrint/kePrint.js"></script>
 <link href="{{< blogdown/postref >}}index.en_files/lightable/lightable.css" rel="stylesheet" />
 <script src="//yihui.org/js/math-code.js" defer></script>
@@ -30,57 +29,62 @@ projects: []
   src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
 
+
+
+
+
+
 # longitudinal data analysis
 
-- If repeated measurements are over time, such data are
-  called repeated measures, time-course, or
-  longitudinal data
-- Studies involving such data are often called longitudinal
-  studies (usually a cohort study, although RCTs can also
-  be longitudinal).
++ If repeated measurements are over time, such data are
+called repeated measures, time-course, or
+longitudinal data
++ Studies involving such data are often called longitudinal
+studies (usually a cohort study, although RCTs can also
+be longitudinal).
 
 # features of longitudinal data
 
-- Defining feature: repeated observations on individuals, allowing the
-  direct study of change.
-- Note that the measurements are commensurate, i.e. the same variable
-  is measured repeatedly.
-- Longitudinal data require sophisticated statistical techniques because
-  the repeated observations are usually (positively) correlated.
-- Sequential nature of the measures implies that certain types of
-  correlation structures are likely to arise.
-- Correlation must be accounted for to obtain valid inferences.
++ Defining feature: repeated observations on individuals, allowing the
+direct study of change.
++ Note that the measurements are commensurate, i.e. the same variable
+is measured repeatedly.
++ Longitudinal data require sophisticated statistical techniques because
+the repeated observations are usually (positively) correlated.
++ Sequential nature of the measures implies that certain types of
+correlation structures are likely to arise.
++ Correlation must be accounted for to obtain valid inferences.
 
 # potential advantages
 
-- They allow investigation of events that occur in time. Essential to the
-  study of normal growth and aging, and the eﬀects of individual
-  characteristics, treatments, or environmental exposures on those
-  changes. Also essential to the study of the temporal pattern of response
-  to treatment.
-- Can study the order of events.
-- Permit more complete ascertainment of exposure histories in
-  epidemiologic studies.
++ They allow investigation of events that occur in time. Essential to the
+study of normal growth and aging, and the eﬀects of individual
+characteristics, treatments, or environmental exposures on those
+changes. Also essential to the study of the temporal pattern of response
+to treatment.
++ Can study the order of events.
++ Permit more complete ascertainment of exposure histories in
+epidemiologic studies.
 
 # example dataset used in this presentation
 
-- This study was conducted in 16 boys and 11 girls, who at ages 8, 10, 12, and 14 had their distance (mm) from the center of the pituitary gland to the pteryomaxillary fissure measured. Changes in pituitary-pteryomaxillary distances during growth is important in orthodontal therapy.
-- The goals of the study were to describe the distance in boys and girls as simple functions of age, and then to compare the functions for boys and girls
++ This study was conducted in 16 boys and 11 girls, who at ages 8, 10, 12, and 14 had their distance (mm) from the center of the pituitary gland to the pteryomaxillary fissure measured. Changes in pituitary-pteryomaxillary distances during growth is important in orthodontal therapy.
++ The goals of the study were to describe the distance in boys and girls as simple functions of age, and then to compare the functions for boys and girls
 
 # read in data
 
 ### The dental dataset contains the following variables:
 
-- id = a sequential number;
-- sex = sex, a factor with categories 0 = “Girl”, 1 = “Boy”;
-- y8 = Measure at age 8;
-- y10 = Measure at age 10;
-- y12 = Measure at age 12;
-- y14 = Measure at age 14.
++ id = a sequential number;
++ sex = sex, a factor with categories 0 = “Girl”, 1 = “Boy”;
++ y8 = Measure at age 8;
++ y10 = Measure at age 10;
++ y12 = Measure at age 12;
++ y14 = Measure at age 14.
 
-# 
+#
 
-``` r
+```r
 dental<-readr::read_csv("dental.csv")
 
 dat<-dental |> 
@@ -95,30 +99,97 @@ dat<-dental |>
 
 # glimpse of the dataset
 
-``` r
+
+```r
 (tab<-dat%>%
   head() |> 
-  flextable() %>%
-  flextable::set_table_properties(width = .75, layout = "autofit") %>%
-  flextable::theme_zebra() %>%
-  flextable::fontsize(size = 12) %>%
-  flextable::fontsize(size = 12, part = "header") %>%
-  flextable::align_text_col(align = "center") %>%
-  flextable::set_caption(caption = "data summary.")  %>%
-  flextable::border_outer())
+  kableExtra::kbl())
 ```
 
-<div class="tabwid"><style>.cl-2439fd90{table-layout:auto;width:75%;}.cl-240edd54{font-family:'Arial';font-size:12pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-240edd7c{font-family:'Arial';font-size:12pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-241ca268{margin:0;text-align:right;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-241ca286{margin:0;text-align:center;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-241d0226{background-color:rgba(207, 207, 207, 1.00);vertical-align: middle;border-bottom: 1pt solid rgba(102, 102, 102, 1.00);border-top: 1pt solid rgba(102, 102, 102, 1.00);border-left: 1pt solid rgba(102, 102, 102, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d0244{background-color:rgba(207, 207, 207, 1.00);vertical-align: middle;border-bottom: 1pt solid rgba(102, 102, 102, 1.00);border-top: 1pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d024e{background-color:rgba(207, 207, 207, 1.00);vertical-align: middle;border-bottom: 1pt solid rgba(102, 102, 102, 1.00);border-top: 1pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d0258{background-color:rgba(207, 207, 207, 1.00);vertical-align: middle;border-bottom: 1pt solid rgba(102, 102, 102, 1.00);border-top: 1pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 1pt solid rgba(102, 102, 102, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d0259{background-color:rgba(239, 239, 239, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 1pt solid rgba(102, 102, 102, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d0262{background-color:rgba(239, 239, 239, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d026c{background-color:rgba(239, 239, 239, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d026d{background-color:rgba(239, 239, 239, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 1pt solid rgba(102, 102, 102, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d0276{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 1pt solid rgba(102, 102, 102, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d0280{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d028a{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d029e{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 1pt solid rgba(102, 102, 102, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d029f{background-color:transparent;vertical-align: middle;border-bottom: 1pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 1pt solid rgba(102, 102, 102, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d02a8{background-color:transparent;vertical-align: middle;border-bottom: 1pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d02b2{background-color:transparent;vertical-align: middle;border-bottom: 1pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-241d02b3{background-color:transparent;vertical-align: middle;border-bottom: 1pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 1pt solid rgba(102, 102, 102, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing='true' class='cl-2439fd90'>
+<table>
+ <thead>
+  <tr>
+   <th style="text-align:right;"> id </th>
+   <th style="text-align:left;"> sex </th>
+   <th style="text-align:left;"> ageclass </th>
+   <th style="text-align:right;"> distance </th>
+   <th style="text-align:left;"> agesex </th>
+   <th style="text-align:right;"> age </th>
+   <th style="text-align:left;"> age1 </th>
+   <th style="text-align:right;"> sex1 </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:left;"> Girl </td>
+   <td style="text-align:left;"> y8 </td>
+   <td style="text-align:right;"> 21.0 </td>
+   <td style="text-align:left;"> y8Girl </td>
+   <td style="text-align:right;"> 8 </td>
+   <td style="text-align:left;"> 8 </td>
+   <td style="text-align:right;"> 1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:left;"> Girl </td>
+   <td style="text-align:left;"> y10 </td>
+   <td style="text-align:right;"> 20.0 </td>
+   <td style="text-align:left;"> y10Girl </td>
+   <td style="text-align:right;"> 10 </td>
+   <td style="text-align:left;"> 10 </td>
+   <td style="text-align:right;"> 1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:left;"> Girl </td>
+   <td style="text-align:left;"> y12 </td>
+   <td style="text-align:right;"> 21.5 </td>
+   <td style="text-align:left;"> y12Girl </td>
+   <td style="text-align:right;"> 12 </td>
+   <td style="text-align:left;"> 12 </td>
+   <td style="text-align:right;"> 1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:left;"> Girl </td>
+   <td style="text-align:left;"> y14 </td>
+   <td style="text-align:right;"> 23.0 </td>
+   <td style="text-align:left;"> y14Girl </td>
+   <td style="text-align:right;"> 14 </td>
+   <td style="text-align:left;"> 14 </td>
+   <td style="text-align:right;"> 1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 2 </td>
+   <td style="text-align:left;"> Girl </td>
+   <td style="text-align:left;"> y8 </td>
+   <td style="text-align:right;"> 21.0 </td>
+   <td style="text-align:left;"> y8Girl </td>
+   <td style="text-align:right;"> 8 </td>
+   <td style="text-align:left;"> 8 </td>
+   <td style="text-align:right;"> 1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 2 </td>
+   <td style="text-align:left;"> Girl </td>
+   <td style="text-align:left;"> y10 </td>
+   <td style="text-align:right;"> 21.5 </td>
+   <td style="text-align:left;"> y10Girl </td>
+   <td style="text-align:right;"> 10 </td>
+   <td style="text-align:left;"> 10 </td>
+   <td style="text-align:right;"> 1 </td>
+  </tr>
+</tbody>
+</table>
 
-<caption style="display:table-caption;margin:0pt;text-align:center;border-bottom: 0.00pt solid transparent;border-top: 0.00pt solid transparent;border-left: 0.00pt solid transparent;border-right: 0.00pt solid transparent;padding-top:3pt;padding-bottom:3pt;padding-left:3pt;padding-right:3pt;line-height: 1;background-color:transparent;">
-(#tab:unnamed-chunk-2)data summary.
-</caption>
 
-<thead><tr style="overflow-wrap:break-word;"><th class="cl-241d0226"><p class="cl-241ca268"><span class="cl-240edd54">id</span></p></th><th class="cl-241d0244"><p class="cl-241ca286"><span class="cl-240edd54">sex</span></p></th><th class="cl-241d0244"><p class="cl-241ca286"><span class="cl-240edd54">ageclass</span></p></th><th class="cl-241d024e"><p class="cl-241ca268"><span class="cl-240edd54">distance</span></p></th><th class="cl-241d0244"><p class="cl-241ca286"><span class="cl-240edd54">agesex</span></p></th><th class="cl-241d024e"><p class="cl-241ca268"><span class="cl-240edd54">age</span></p></th><th class="cl-241d0244"><p class="cl-241ca286"><span class="cl-240edd54">age1</span></p></th><th class="cl-241d0258"><p class="cl-241ca268"><span class="cl-240edd54">sex1</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-241d0259"><p class="cl-241ca268"><span class="cl-240edd7c">1</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">Girl</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">y8</span></p></td><td class="cl-241d026c"><p class="cl-241ca268"><span class="cl-240edd7c">21.0</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">y8Girl</span></p></td><td class="cl-241d026c"><p class="cl-241ca268"><span class="cl-240edd7c">8</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">8</span></p></td><td class="cl-241d026d"><p class="cl-241ca268"><span class="cl-240edd7c">1</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-241d0276"><p class="cl-241ca268"><span class="cl-240edd7c">1</span></p></td><td class="cl-241d0280"><p class="cl-241ca286"><span class="cl-240edd7c">Girl</span></p></td><td class="cl-241d0280"><p class="cl-241ca286"><span class="cl-240edd7c">y10</span></p></td><td class="cl-241d028a"><p class="cl-241ca268"><span class="cl-240edd7c">20.0</span></p></td><td class="cl-241d0280"><p class="cl-241ca286"><span class="cl-240edd7c">y10Girl</span></p></td><td class="cl-241d028a"><p class="cl-241ca268"><span class="cl-240edd7c">10</span></p></td><td class="cl-241d0280"><p class="cl-241ca286"><span class="cl-240edd7c">10</span></p></td><td class="cl-241d029e"><p class="cl-241ca268"><span class="cl-240edd7c">1</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-241d0259"><p class="cl-241ca268"><span class="cl-240edd7c">1</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">Girl</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">y12</span></p></td><td class="cl-241d026c"><p class="cl-241ca268"><span class="cl-240edd7c">21.5</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">y12Girl</span></p></td><td class="cl-241d026c"><p class="cl-241ca268"><span class="cl-240edd7c">12</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">12</span></p></td><td class="cl-241d026d"><p class="cl-241ca268"><span class="cl-240edd7c">1</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-241d0276"><p class="cl-241ca268"><span class="cl-240edd7c">1</span></p></td><td class="cl-241d0280"><p class="cl-241ca286"><span class="cl-240edd7c">Girl</span></p></td><td class="cl-241d0280"><p class="cl-241ca286"><span class="cl-240edd7c">y14</span></p></td><td class="cl-241d028a"><p class="cl-241ca268"><span class="cl-240edd7c">23.0</span></p></td><td class="cl-241d0280"><p class="cl-241ca286"><span class="cl-240edd7c">y14Girl</span></p></td><td class="cl-241d028a"><p class="cl-241ca268"><span class="cl-240edd7c">14</span></p></td><td class="cl-241d0280"><p class="cl-241ca286"><span class="cl-240edd7c">14</span></p></td><td class="cl-241d029e"><p class="cl-241ca268"><span class="cl-240edd7c">1</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-241d0259"><p class="cl-241ca268"><span class="cl-240edd7c">2</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">Girl</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">y8</span></p></td><td class="cl-241d026c"><p class="cl-241ca268"><span class="cl-240edd7c">21.0</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">y8Girl</span></p></td><td class="cl-241d026c"><p class="cl-241ca268"><span class="cl-240edd7c">8</span></p></td><td class="cl-241d0262"><p class="cl-241ca286"><span class="cl-240edd7c">8</span></p></td><td class="cl-241d026d"><p class="cl-241ca268"><span class="cl-240edd7c">1</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-241d029f"><p class="cl-241ca268"><span class="cl-240edd7c">2</span></p></td><td class="cl-241d02a8"><p class="cl-241ca286"><span class="cl-240edd7c">Girl</span></p></td><td class="cl-241d02a8"><p class="cl-241ca286"><span class="cl-240edd7c">y10</span></p></td><td class="cl-241d02b2"><p class="cl-241ca268"><span class="cl-240edd7c">21.5</span></p></td><td class="cl-241d02a8"><p class="cl-241ca286"><span class="cl-240edd7c">y10Girl</span></p></td><td class="cl-241d02b2"><p class="cl-241ca268"><span class="cl-240edd7c">10</span></p></td><td class="cl-241d02a8"><p class="cl-241ca286"><span class="cl-240edd7c">10</span></p></td><td class="cl-241d02b3"><p class="cl-241ca268"><span class="cl-240edd7c">1</span></p></td></tr></tbody></table></div>
+# Explanatory data analysis(EDA)
+## for the following graphs ill use my own format
 
-# for the following graphs ill use my own format
 
-``` r
+
+```r
 dental_long <- pivot_longer(dental, cols = starts_with("y"), 
                             names_to = "measurement", values_to = "distance") %>% 
   mutate(
@@ -132,285 +203,123 @@ dental_long <- pivot_longer(dental, cols = starts_with("y"),
   )
 ```
 
-# 
+#
 
-``` r
+```r
 group_by(dental_long, sex, measurement) %>% 
   get_summary_stats(distance, show = c("mean", "sd","median","sd","max","min")) |> 
   kableExtra::kbl()
 ```
 
 <table>
-<thead>
-<tr>
-<th style="text-align:left;">
-sex
-</th>
-<th style="text-align:left;">
-measurement
-</th>
-<th style="text-align:left;">
-variable
-</th>
-<th style="text-align:right;">
-n
-</th>
-<th style="text-align:right;">
-mean
-</th>
-<th style="text-align:right;">
-sd
-</th>
-<th style="text-align:right;">
-median
-</th>
-<th style="text-align:right;">
-max
-</th>
-<th style="text-align:right;">
-min
-</th>
-</tr>
-</thead>
+ <thead>
+  <tr>
+   <th style="text-align:left;"> sex </th>
+   <th style="text-align:left;"> measurement </th>
+   <th style="text-align:left;"> variable </th>
+   <th style="text-align:right;"> n </th>
+   <th style="text-align:right;"> mean </th>
+   <th style="text-align:right;"> sd </th>
+   <th style="text-align:right;"> median </th>
+   <th style="text-align:right;"> max </th>
+   <th style="text-align:right;"> min </th>
+  </tr>
+ </thead>
 <tbody>
-<tr>
-<td style="text-align:left;">
-Boy
-</td>
-<td style="text-align:left;">
-Measure at age 8
-</td>
-<td style="text-align:left;">
-distance
-</td>
-<td style="text-align:right;">
-16
-</td>
-<td style="text-align:right;">
-22.875
-</td>
-<td style="text-align:right;">
-2.453
-</td>
-<td style="text-align:right;">
-23.00
-</td>
-<td style="text-align:right;">
-27.5
-</td>
-<td style="text-align:right;">
-17.0
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Boy
-</td>
-<td style="text-align:left;">
-Measure at age 10
-</td>
-<td style="text-align:left;">
-distance
-</td>
-<td style="text-align:right;">
-16
-</td>
-<td style="text-align:right;">
-23.812
-</td>
-<td style="text-align:right;">
-2.136
-</td>
-<td style="text-align:right;">
-23.50
-</td>
-<td style="text-align:right;">
-28.0
-</td>
-<td style="text-align:right;">
-20.5
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Boy
-</td>
-<td style="text-align:left;">
-Measure at age 12
-</td>
-<td style="text-align:left;">
-distance
-</td>
-<td style="text-align:right;">
-16
-</td>
-<td style="text-align:right;">
-25.719
-</td>
-<td style="text-align:right;">
-2.652
-</td>
-<td style="text-align:right;">
-25.00
-</td>
-<td style="text-align:right;">
-31.0
-</td>
-<td style="text-align:right;">
-22.5
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Boy
-</td>
-<td style="text-align:left;">
-Measure at age 14
-</td>
-<td style="text-align:left;">
-distance
-</td>
-<td style="text-align:right;">
-16
-</td>
-<td style="text-align:right;">
-27.469
-</td>
-<td style="text-align:right;">
-2.085
-</td>
-<td style="text-align:right;">
-26.75
-</td>
-<td style="text-align:right;">
-31.5
-</td>
-<td style="text-align:right;">
-25.0
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Girl
-</td>
-<td style="text-align:left;">
-Measure at age 8
-</td>
-<td style="text-align:left;">
-distance
-</td>
-<td style="text-align:right;">
-11
-</td>
-<td style="text-align:right;">
-21.182
-</td>
-<td style="text-align:right;">
-2.125
-</td>
-<td style="text-align:right;">
-21.00
-</td>
-<td style="text-align:right;">
-24.5
-</td>
-<td style="text-align:right;">
-16.5
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Girl
-</td>
-<td style="text-align:left;">
-Measure at age 10
-</td>
-<td style="text-align:left;">
-distance
-</td>
-<td style="text-align:right;">
-11
-</td>
-<td style="text-align:right;">
-22.227
-</td>
-<td style="text-align:right;">
-1.902
-</td>
-<td style="text-align:right;">
-22.50
-</td>
-<td style="text-align:right;">
-25.0
-</td>
-<td style="text-align:right;">
-19.0
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Girl
-</td>
-<td style="text-align:left;">
-Measure at age 12
-</td>
-<td style="text-align:left;">
-distance
-</td>
-<td style="text-align:right;">
-11
-</td>
-<td style="text-align:right;">
-23.091
-</td>
-<td style="text-align:right;">
-2.365
-</td>
-<td style="text-align:right;">
-23.00
-</td>
-<td style="text-align:right;">
-28.0
-</td>
-<td style="text-align:right;">
-19.0
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Girl
-</td>
-<td style="text-align:left;">
-Measure at age 14
-</td>
-<td style="text-align:left;">
-distance
-</td>
-<td style="text-align:right;">
-11
-</td>
-<td style="text-align:right;">
-24.091
-</td>
-<td style="text-align:right;">
-2.437
-</td>
-<td style="text-align:right;">
-24.00
-</td>
-<td style="text-align:right;">
-28.0
-</td>
-<td style="text-align:right;">
-19.5
-</td>
-</tr>
+  <tr>
+   <td style="text-align:left;"> Boy </td>
+   <td style="text-align:left;"> Measure at age 8 </td>
+   <td style="text-align:left;"> distance </td>
+   <td style="text-align:right;"> 16 </td>
+   <td style="text-align:right;"> 22.875 </td>
+   <td style="text-align:right;"> 2.453 </td>
+   <td style="text-align:right;"> 23.00 </td>
+   <td style="text-align:right;"> 27.5 </td>
+   <td style="text-align:right;"> 17.0 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Boy </td>
+   <td style="text-align:left;"> Measure at age 10 </td>
+   <td style="text-align:left;"> distance </td>
+   <td style="text-align:right;"> 16 </td>
+   <td style="text-align:right;"> 23.812 </td>
+   <td style="text-align:right;"> 2.136 </td>
+   <td style="text-align:right;"> 23.50 </td>
+   <td style="text-align:right;"> 28.0 </td>
+   <td style="text-align:right;"> 20.5 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Boy </td>
+   <td style="text-align:left;"> Measure at age 12 </td>
+   <td style="text-align:left;"> distance </td>
+   <td style="text-align:right;"> 16 </td>
+   <td style="text-align:right;"> 25.719 </td>
+   <td style="text-align:right;"> 2.652 </td>
+   <td style="text-align:right;"> 25.00 </td>
+   <td style="text-align:right;"> 31.0 </td>
+   <td style="text-align:right;"> 22.5 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Boy </td>
+   <td style="text-align:left;"> Measure at age 14 </td>
+   <td style="text-align:left;"> distance </td>
+   <td style="text-align:right;"> 16 </td>
+   <td style="text-align:right;"> 27.469 </td>
+   <td style="text-align:right;"> 2.085 </td>
+   <td style="text-align:right;"> 26.75 </td>
+   <td style="text-align:right;"> 31.5 </td>
+   <td style="text-align:right;"> 25.0 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Girl </td>
+   <td style="text-align:left;"> Measure at age 8 </td>
+   <td style="text-align:left;"> distance </td>
+   <td style="text-align:right;"> 11 </td>
+   <td style="text-align:right;"> 21.182 </td>
+   <td style="text-align:right;"> 2.125 </td>
+   <td style="text-align:right;"> 21.00 </td>
+   <td style="text-align:right;"> 24.5 </td>
+   <td style="text-align:right;"> 16.5 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Girl </td>
+   <td style="text-align:left;"> Measure at age 10 </td>
+   <td style="text-align:left;"> distance </td>
+   <td style="text-align:right;"> 11 </td>
+   <td style="text-align:right;"> 22.227 </td>
+   <td style="text-align:right;"> 1.902 </td>
+   <td style="text-align:right;"> 22.50 </td>
+   <td style="text-align:right;"> 25.0 </td>
+   <td style="text-align:right;"> 19.0 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Girl </td>
+   <td style="text-align:left;"> Measure at age 12 </td>
+   <td style="text-align:left;"> distance </td>
+   <td style="text-align:right;"> 11 </td>
+   <td style="text-align:right;"> 23.091 </td>
+   <td style="text-align:right;"> 2.365 </td>
+   <td style="text-align:right;"> 23.00 </td>
+   <td style="text-align:right;"> 28.0 </td>
+   <td style="text-align:right;"> 19.0 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Girl </td>
+   <td style="text-align:left;"> Measure at age 14 </td>
+   <td style="text-align:left;"> distance </td>
+   <td style="text-align:right;"> 11 </td>
+   <td style="text-align:right;"> 24.091 </td>
+   <td style="text-align:right;"> 2.437 </td>
+   <td style="text-align:right;"> 24.00 </td>
+   <td style="text-align:right;"> 28.0 </td>
+   <td style="text-align:right;"> 19.5 </td>
+  </tr>
 </tbody>
 </table>
 
-# 
+#
 
-``` r
+```r
 (box<-ggplot(dental_long, aes(measurement, distance, fill = measurement)) +
   tvthemes::scale_fill_avatar()+
   geom_boxplot() +
@@ -424,7 +333,8 @@ distance
 
 <img src="staticunnamed-chunk-5-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
-``` r
+
+```r
 (box1<-ggplot(dental_long, aes(sex, distance, fill = measurement)) +
   tvthemes::scale_fill_avatar()+
   geom_boxplot() +
@@ -433,7 +343,8 @@ distance
 
 <img src="staticunnamed-chunk-6-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
-``` r
+
+```r
 group_by(dental_long, sex, measurement) %>% 
   summarise(mean_distance = mean(distance), .groups = "drop") %>% 
   ggplot(aes(sex, mean_distance, fill = measurement, label = round(mean_distance))) +
@@ -448,7 +359,7 @@ group_by(dental_long, sex, measurement) %>%
 
 # covariance
 
-``` r
+```r
 # co-variance matrix
 cov_obs <- dplyr::select(dental, starts_with("y")) %>%  cov()
 cov_obs
@@ -461,7 +372,7 @@ cov_obs
 
 # correlation matrix
 
-``` r
+```r
 cov2cor(cov_obs)
 #>            y8       y10       y12       y14
 #> y8  1.0000000 0.6255833 0.7108079 0.5998338
@@ -472,15 +383,15 @@ cov2cor(cov_obs)
 
 # further exploration
 
-``` r
+```r
 ggpairs(dplyr::select(dental, starts_with("y")), lower = list(continuous = "smooth"))
 ```
 
 <img src="staticunnamed-chunk-10-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
-# 
+#
 
-``` r
+```r
 ggpairs(dental, mapping = aes(colour = sex), columns = 3:6,
         lower = list(continuous = "smooth"))
 ```
@@ -489,7 +400,7 @@ ggpairs(dental, mapping = aes(colour = sex), columns = 3:6,
 
 # trend by gender
 
-``` r
+```r
 (p<-group_by(dental_long, sex, age) %>% 
   summarise(mean = list(mean_ci(distance)), .groups = "drop") %>% 
   unnest_wider(mean) %>% 
@@ -504,9 +415,12 @@ ggpairs(dental, mapping = aes(colour = sex), columns = 3:6,
 
 <img src="staticunnamed-chunk-12-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
+
+
+
 # dental growth per child
 
-``` r
+```r
 (p<-ggplot(dental_long, aes(age, distance, col = factor(id))) +
   geom_point() +
   geom_line() +
@@ -518,7 +432,9 @@ ggpairs(dental, mapping = aes(colour = sex), columns = 3:6,
 
 <img src="staticunnamed-chunk-13-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
-``` r
+
+
+```r
 (q<-ggplot(dental_long, aes(age, distance, col = factor(id))) +
   geom_line() +
   tvthemes::scale_color_avatar()+
@@ -528,7 +444,9 @@ ggpairs(dental, mapping = aes(colour = sex), columns = 3:6,
 
 <img src="staticunnamed-chunk-14-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
-``` r
+
+
+```r
 (m<-ggplot(dental_long, aes(age, distance)) +
   geom_line(aes(group = factor(id))) +
   geom_smooth() +
@@ -537,104 +455,90 @@ ggpairs(dental, mapping = aes(colour = sex), columns = 3:6,
 
 <img src="staticunnamed-chunk-15-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
-# Variance Components - matrix *V* :
 
-- Maximum Likelihood (ML)
-- restricted maximum likelihood (REML)
+#  Variance Components - matrix *V* :
+
++ Maximum Likelihood (ML)
++ restricted maximum likelihood (REML)
 
 # What’s the difference between ML and REML
-
-- ML estimates of variances are known to be biased in small samples
-- the simplest case: Sample variance
++ ML estimates of variances are known to be biased in small samples
++ the simplest case: Sample variance
 
 `$$var(x)=\frac{1}{n-1}\sum_{i=1}^n(x_i-\bar{x})^2$$`
 
-- The REML estimation is a generalization of this idea,It provides unbiased estimates of the parameters in the covariance matrix `\(V_i\)` in small samples
++ The REML estimation is a generalization of this idea,It provides unbiased estimates of the parameters in the covariance matrix `\(V_i\)` in small samples
 
 # fitting marginal models in R
 
 > Marginal models can be ﬁtted using function *gls()* from the *nlme* package
-> it has the following structure
+it has the following structure
 
-- *model*: a formula specifying the response vector and the covariates to include in
-  the model
-- *data*: a data frame containing all the variables
-- *correlation*: a function describing the assumed correlation structure
-- *weights*: a function describing the assumed within-group heteroscedasticity
-  structure
++ *model*: a formula specifying the response vector and the covariates to include in
+the model
++ *data*: a data frame containing all the variables
++ *correlation*: a function describing the assumed correlation structure
++ *weights*: a function describing the assumed within-group heteroscedasticity
+structure
 
 # covariance and correlation matrices
 
 <div class="figure" style="text-align: center">
-
-<img src="covv.png" alt="The RStudio IDE" width="286" />
-<p class="caption">
-Figure 1: The RStudio IDE
-</p>
-
+<img src="covv.png" alt="Covariance Matrix" width="286" />
+<p class="caption">Figure 1: Covariance Matrix</p>
 </div>
 
 # Properties
 
-- on the diagonal the variances, oﬀ diagonal covariances
-- symmetric `\(\rightarrow cov(Y_1 , Y_2 ) = cov(Y_2 , Y_1)\)`
++ on the diagonal the variances, oﬀ diagonal covariances
++ symmetric `\(\rightarrow cov(Y_1 , Y_2 ) = cov(Y_2 , Y_1)\)`
 
 ## Variances, covariances and correlations
 
-- variance measures how far a set of numbers is spread out (always positive)
-- covariance is a measure of how much two random variables change together
-  (positive or negative)
-- correlation a measure of the linear correlation (dependence) between two variables
-  (between -1 and 1; 0 no correlation)
++ variance measures how far a set of numbers is spread out (always positive)
++ covariance is a measure of how much two random variables change together
+(positive or negative)
++ correlation a measure of the linear correlation (dependence) between two variables
+(between -1 and 1; 0 no correlation)
 
 `$$corr(Y_1,Y_2)=\frac{cov(Y_1.Y_2)}{\sqrt{var(Y_1)\sqrt{var(Y_2}}}$$`
 
-- Due to the fact that the magnitude of the covariance between `\(Y_1\)` and `\(Y_2\)` depends on their variability, we translate the covariance matrix into a correlation matrix
++ Due to the fact that the magnitude of the covariance between `\(Y_1\)` and `\(Y_2\)` depends on their variability, we translate the covariance matrix into a correlation matrix
 
-# 
-
+#
 <div class="figure" style="text-align: center">
-
-<img src="corrr.png" alt="The RStudio IDE" width="232" />
-<p class="caption">
-Figure 2: The RStudio IDE
-</p>
-
+<img src="corrr.png" alt="Correlation Matrix" width="232" />
+<p class="caption">Figure 2: Correlation Matrix</p>
 </div>
 
 # 
++ We need an appropriate choice for `\(V_i\)` in order to appropriately describe the
+correlations between the repeated measurements
 
-- We need an appropriate choice for `\(V_i\)` in order to appropriately describe the
-  correlations between the repeated measurements
-
-- compound symmetry
-
-- Gaussian spatial correlation
-
-- autoregressive process
-
-- Toeplitz
-
-- exponential spatial correlation
++ compound symmetry 
++ Gaussian spatial correlation
++ autoregressive process 
++ Toeplitz
++ exponential spatial correlation
 
 ## 
 
-- *Unstructured* - Every variance and covariance term for observations within a school is a separate parameter and is therefore estimated uniquely; no patterns among variances or correlations are assumed. This structure offers maximum flexibility but is most costly in terms of parameters estimated.
-- *Compound symmetry* - Assume variance is constant across all time points and correlation is constant across all pairs of time points. This structure is highly restrictive but least costly in terms of parameters estimated.
-- *Autoregressive* - Assume variance is constant across all time points, but correlation drops off in a systematic fashion as the gap in time increases. Autoregressive models expand compound symmetry by allowing for a common structure where points closest in time are most highly correlated.
+- _Unstructured_ - Every variance and covariance term for observations within a school is a separate parameter and is therefore estimated uniquely; no patterns among variances or correlations are assumed.  This structure offers maximum flexibility but is most costly in terms of parameters estimated.
+- _Compound symmetry_ - Assume variance is constant across all time points and correlation is constant across all pairs of time points.  This structure is highly restrictive but least costly in terms of parameters estimated.
+- _Autoregressive_ - Assume variance is constant across all time points, but correlation drops off in a systematic fashion as the gap in time increases.  Autoregressive models expand compound symmetry by allowing for a common structure where points closest in time are most highly correlated.
 
-# 
+#
+##
 
-## 
+- _Toeplitz_ - Toeplitz is similar to the autoregressive model, except that it does not impose any structure on the decline in correlation as time gaps increase.  Thus, it requires more parameters to be estimated than the autoregressive model while providing additional flexibility.
+- _Heterogeneous variances_ - The assumption that variances are equal across time points found in the compound symmetry, autoregressive, and Toeplitz models can be relaxed by introducing additional parameters to allow unequal (heterogeneous) variances.
 
-- *Toeplitz* - Toeplitz is similar to the autoregressive model, except that it does not impose any structure on the decline in correlation as time gaps increase. Thus, it requires more parameters to be estimated than the autoregressive model while providing additional flexibility.
-- *Heterogeneous variances* - The assumption that variances are equal across time points found in the compound symmetry, autoregressive, and Toeplitz models can be relaxed by introducing additional parameters to allow unequal (heterogeneous) variances.
 
 # doing it in R
-
 ## define a function in R
 
-``` r
+
+```r
 corandcov <- function(glsob,cov=T,...){
   corm <- corMatrix(glsob$modelStruct$corStruct)[[5]]
   print(corm)
@@ -644,11 +548,11 @@ corandcov <- function(glsob,cov=T,...){
   return(covm)}
 ```
 
+
 # unstructured mean and unstructured covariance
+##
 
-## 
-
-``` r
+```r
 ## model 1
 model<-gls(distance~-1+age1*sex1,data=dat,corr=corSymm(form=~1|id) , 
            weights=varIdent(form=~1|age1),
@@ -664,10 +568,9 @@ print(cc)
 ```
 
 # linear average trend
+###
 
-### 
-
-``` r
+```r
 model2<-gls(distance~age*sex +sex ,data=dat,corr=corSymm(form=~1|id) , 
            weights=varIdent(form=~1|age1),
           method="ML")
@@ -682,10 +585,9 @@ print(cc)
 ```
 
 # compare model 1 and 2
+###
 
-### 
-
-``` r
+```r
 anova(model2,model,type="LR")
 #>        Model df      AIC      BIC    logLik   Test  L.Ratio p-value
 #> model2     1 14 447.4770 485.0269 -209.7385                        
@@ -693,10 +595,9 @@ anova(model2,model,type="LR")
 ```
 
 # Parallel average profiles
+###
 
-### 
-
-``` r
+```r
 model3<-gls(distance~age+sex,data=dat,corr=corSymm(form=~1|id) , 
            weights=varIdent(form=~1|age1),
           method="ML")
@@ -709,11 +610,11 @@ print(cc)
 #> [4,] 0.4754107 0.6520613 0.7249401 1.0000000
 ```
 
+
 # compare all the three models
+###
 
-### 
-
-``` r
+```r
 anova(model,model2,model3,type="LR")
 #>        Model df      AIC      BIC    logLik   Test  L.Ratio p-value
 #> model      1 18 452.5093 500.7877 -208.2546                        
@@ -722,10 +623,9 @@ anova(model,model2,model3,type="LR")
 ```
 
 # Topeltz covariance structure
+###
 
-### 
-
-``` r
+```r
 model4<-gls(distance~age*sex+sex,data=dat,corr=corARMA(form=~1|id,p=3,q=0) , 
            weights=varIdent(form=~1|age1),
           method="ML")
@@ -739,10 +639,9 @@ print(cc)
 ```
 
 # compare all the 4 models
+###
 
-### 
-
-``` r
+```r
 anova(model,model2,model3,model4,type="LR")
 #>        Model df      AIC      BIC    logLik   Test  L.Ratio p-value
 #> model      1 18 452.5093 500.7877 -208.2546                        
@@ -752,10 +651,9 @@ anova(model,model2,model3,model4,type="LR")
 ```
 
 # AR(1) covariance structure
+###
 
-### 
-
-``` r
+```r
 model5<-gls(distance~age*sex+sex,data=dat,corr=corAR1(form=~1|id) , 
            weights=varIdent(form=~1|age1),
           method="ML")
@@ -769,10 +667,9 @@ print(cc)
 ```
 
 # compare all models
+###
 
-### 
-
-``` r
+```r
 anova(model,model2,model3,model4,model5)
 #>        Model df      AIC      BIC    logLik   Test   L.Ratio p-value
 #> model      1 18 452.5093 500.7877 -208.2546                         
@@ -782,7 +679,7 @@ anova(model,model2,model3,model4,model5)
 #> model5     5  9 456.7470 480.8862 -219.3735 4 vs 5 16.249639  0.0003
 ```
 
-``` r
+```r
 cc <- corMatrix(model4$modelStruct$corStruct)[[5]]
 print(cc)
 #>           [,1]      [,2]      [,3]      [,4]
@@ -794,28 +691,29 @@ print(cc)
 
 # General Linear Mixed effects model
 
-- Linear MIXED models mix (consider) both ﬁxed and
-  random eﬀects (Hence the name ’Mixed’ models)
-- These models are a way of dealing with
-  correlated data so we can consider research questions in
-  much the same way as independant data; Inferences
-  about within-subject eﬀects can be conducted in a
-  similar way to (standard) between-subject eﬀects.
-- in these models, some subset of the regression coefficients vary randomly from one individual to another, accounting for natural heterogeneity across subjects. Individuals in population are assumed to have their own subject-specific mean response trajectories over time.
-- The mean response is modeled as a combination of population characteristics (fixed effects) assumed to be shared by all individuals, while subject-specific effects (random effects) are unique to a particular individual.
-- Linear Mixed Models are a particular type of hierarchical models which contains both fixed and random effects.
++ Linear MIXED models mix (consider) both ﬁxed and
+random eﬀects (Hence the name ’Mixed’ models)
++ These models are a way of dealing with
+correlated data so we can consider research questions in
+much the same way as independant data; Inferences
+about within-subject eﬀects can be conducted in a
+similar way to (standard) between-subject eﬀects.
++ in these models, some subset of the regression coefficients vary randomly from one individual to another, accounting for natural heterogeneity across subjects. Individuals in population are assumed to have their own subject-specific mean response trajectories over time.
++ The mean response is modeled as a combination of population characteristics (fixed effects) assumed to be shared by all individuals, while subject-specific effects (random effects) are unique to a particular individual.
++ Linear Mixed Models are a particular type of hierarchical models which contains both fixed and random effects.
+
 
 # Two - Stage Approach
 
 ## Growth curve models can be motivated in terms of a two-stage model. In the two-stage model, we assume
 
 1.  A straight line (or curve) ﬁts the observed responses for each subject
-    (ﬁrst stage)
+(ﬁrst stage)
 2.  A regression model relating the mean of the individual intercepts and
-    slopes to subject-speciﬁc covariates (second stage)
+slopes to subject-speciﬁc covariates (second stage)
+
 
 # stage 1
-
 `$$Y_{ij}=v_{i1}+v_{i2}t_{ij}+\epsilon_{ij}$$`
 
 where `\(v_{i1}\)` and `\(v_{i2}\)` are parameters specific to the `\(ith\)` subject and the errors,
@@ -823,15 +721,16 @@ where `\(v_{i1}\)` and `\(v_{i2}\)` are parameters specific to the `\(ith\)` sub
 
 # Doing it in R : method 1
 
-``` r
+
+```r
 library(nlme);rel_model<-lmList(distance~age,data=Orthodont);plot(augPred(rel_model),grid=TRUE)
 ```
 
 <img src="staticunnamed-chunk-27-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
-# method 2 : using R’s nested data capabilities
+# method 2 : using R's nested data capabilities
 
-``` r
+```r
 # created nested dataframes 
 dental_nested <- Orthodont %>%  
               group_by(Subject) %>% 
@@ -857,7 +756,8 @@ dental_nested
 
 # create linear models for each subject or individual
 
-``` r
+
+```r
 dental_models<-dental_nested %>% 
   mutate(
     model=map(data,~lm(distance~age,data=.x))
@@ -882,7 +782,8 @@ dental_models
 
 # coefficients of multiple models
 
-``` r
+
+```r
 dental_models %>%  
   mutate(coef = map(model,~tidy(.x))) %>% 
   unnest(coef) 
@@ -902,10 +803,10 @@ dental_models %>%
 #> 10 M05     <tibble [4 x 3]> <lm>   age         0.85      0.318     2.67  0.116  
 #> # i 44 more rows
 ```
-
 # model performance
 
-``` r
+
+```r
 library(broom)
 model_perf<-dental_models %>% 
   mutate(coef=map(model,~glance(.x))) %>% 
@@ -931,15 +832,15 @@ model_perf<-dental_models %>%
 
 # visualy inpect fit of your models
 
-``` r
+```r
 augmented_models<-dental_models %>% 
   mutate(augmented=map(model,~augment(.x))) %>% 
   unnest(augmented)
 ```
 
-# visualy inspect the models
+# visualy inspect the models 
 
-``` r
+```r
 p<-augmented_models %>% 
   ggplot(aes(x=distance,y=age))+
   geom_point()+
@@ -947,34 +848,35 @@ p<-augmented_models %>%
   facet_wrap(~Subject,scale="free")
 ```
 
-# 
+#
 
-``` r
+```r
 p
 ```
 
 <img src="staticunnamed-chunk-34-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
 # stage 2 : the intercepts and the slopes are regressed on
-
 other covariates:
 
 `$$v_{i1} = \alpha_1 + X_i\beta_1 + e_{i1}$$`
 `$$v_{i2} = \alpha_2 + X_i\beta_2 + e_{i2}$$`
 
-## 
+##
 
-``` r
+```r
 b<-lapply(rel_model,coef)
 V<-lapply(rel_model,vcov)
 ```
 
-``` r
+
+```r
 estm<-rep(c("intercept","slope"),length(b))
 subj<-rep(names(b),each=2)
 ```
 
-``` r
+
+```r
 library(metafor)
 b<-unlist(b)
 V<-bldiag(V)
@@ -982,7 +884,7 @@ V<-bldiag(V)
 
 # results for stage 2
 
-``` r
+```r
 (res2<-rma.mv(b~estm-1,V,random=~estm|subj,struct="UN"))
 #> 
 #> Multivariate Meta-Analysis Model (k = 54; method: REML)
@@ -1016,61 +918,58 @@ V<-bldiag(V)
 #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
-# drawbacks for the
+# drawbacks for the 
 
-- The two-stage method is less attractive when the number and timing of
-  observations varies among subjects, because it does not take proper
-  account of the weighting.
-- Also, note that the two-stage formulation of the growth curve model
-  imposes certain restrictions and structure on the covariates.
-- That is, in the two-stage approach covariates at the ﬁrst stage (except for
-  the intercept) must be time-varying, while covariates at the second stage
-  must be time-invariant.
-- In contrast, in the mixed eﬀects model the only restriction is that the
-  columns of Z i are a subset of the columns of `\(X_i\)` .
++ The two-stage method is less attractive when the number and timing of
+observations varies among subjects, because it does not take proper
+account of the weighting.
++ Also, note that the two-stage formulation of the growth curve model
+imposes certain restrictions and structure on the covariates.
++ That is, in the two-stage approach covariates at the ﬁrst stage (except for
+the intercept) must be time-varying, while covariates at the second stage
+must be time-invariant.
++ In contrast, in the mixed eﬀects model the only restriction is that the
+columns of Z i are a subset of the columns of `\(X_i\)` .
 
 # the general mixed effects model
 
-- the two stage model can be perfomed explicitly in the analysis
-- the associated drawbacks of the two stage model can be avoided by combining the two stages into one model such that
++ the two stage model can be perfomed explicitly in the analysis 
++ the associated drawbacks of the two stage model can be avoided by combining the two stages into one model such that 
 
 `$$Y_i=Z_i\beta_i+\epsilon_i \cdots (1)$$`
 
-`$$\beta_i=K_i\beta+b_i \cdots (2)$$`
-can be simplified to
+`$$\beta_i=K_i\beta+b_i \cdots (2)$$` 
+can be simplified to 
 
 `$$Y_i=X_i\beta+Z_ib_i+\epsilon_i$$` where `\(Z_iK_i=X_i\)`
 
-# 
-
-it is given that
+#
+it is given that 
 
 `$$b_i \sim N(0,D)$$`
-`$$\epsilon_i:n_i \times 1$$` error vector
+`$$\epsilon_i:n_i \times 1$$` error vector 
 `$$\epsilon_i \sim N(0,R)$$` and `\(b_1\cdots b_N,\epsilon_1,\cdots,\epsilon_N\)` independent
 
 # Terminology
 
-- Random Effects : `\(\beta\)`: `\(p \times 1\)` vector of fixed effects regression coefficient
++ Random Effects : `\(\beta\)`: `\(p \times 1\)` vector of fixed effects regression coefficient
 
-> Random eﬀects are those where the particular ’groups’
-> of observations (levels) are drawn randomly from a population of groups.
+>  Random eﬀects are those where the particular ’groups’
+of observations (levels) are drawn randomly from a population of groups.
 
-- fixed effects : `\(b_i\)` : `\(q\times 1\)` vector of random effects regression coefficient
++ fixed effects : `\(b_i\)` : `\(q\times 1\)` vector of random effects regression coefficient
 
-> are the ones we know (and love), where we
-> would expect a differences between two groups to be FIXED
-> as we move from the sample to the population
+>  are the ones we know (and love), where we
+would expect a differences between two groups to be FIXED
+as we move from the sample to the population
 
-# 
+#
 
-- Variance components are elements in `\(D\)` and `\(R\)`
++ Variance components are elements in `\(D\)` and `\(R\)` 
 
-- `\(Y_i\)` : `\(n_i \times 1\)` response vector
-
-- `\(X_i\)` : `\(n_i \times p\)` design matrix of fixed effects
-
-- `\(Z_i\)` : `\(n_i \times q\)` design matrix of random effects
++ `\(Y_i\)` : `\(n_i \times 1\)` response vector
++ `\(X_i\)` : `\(n_i \times p\)` design matrix of fixed effects
++ `\(Z_i\)` : `\(n_i \times q\)` design matrix of random effects
 
 hence
 
@@ -1078,71 +977,39 @@ hence
 
 # features
 
-- D must be symmetric and positive definite
++ D must be symmetric and positive definite
++ `\(Z_i\)` columns are subsets of `\(X_i\)` columns
++ conditional mean of `\(Y_i\)` given random effects `\(b_i\)` is `\(E(Y_i|b_i)=X_i\beta+Z_ib_i\)`
 
-- `\(Z_i\)` columns are subsets of `\(X_i\)` columns
-
-- conditional mean of `\(Y_i\)` given random effects `\(b_i\)` is `\(E(Y_i|b_i)=X_i\beta+Z_ib_i\)`
-
-- the marginal mean of `\(Y_i\)` is `\(E(E(Y_i|b_i))=E(X_i\beta+Z_ib_i)=X_i\beta\)`
++ the marginal mean of `\(Y_i\)` is `\(E(E(Y_i|b_i))=E(X_i\beta+Z_ib_i)=X_i\beta\)`
 
 # Matrix D
-
-<div class="figure" style="text-align: center">
-
-<img src="new1.png" alt="The RStudio IDE" width="367" />
-<p class="caption">
-Figure 3: The RStudio IDE
-</p>
-
-</div>
+<img src="new1.png" width="367" style="display: block; margin: auto;" />
 
 # Matrix R
-
-<div class="figure" style="text-align: center">
-
-<img src="new_r.png" alt="The RStudio IDE" width="365" />
-<p class="caption">
-Figure 4: The RStudio IDE
-</p>
-
-</div>
+<img src="new_r.png" width="365" style="display: block; margin: auto;" />
 
 # contrasting with the general linear model
+<img src="new_p.png" width="372" style="display: block; margin: auto;" />
 
-<div class="figure" style="text-align: center">
-
-<img src="new_p.png" alt="The RStudio IDE" width="372" />
-<p class="caption">
-Figure 5: The RStudio IDE
-</p>
-
-</div>
-
-# cont’d
-
-<div class="figure" style="text-align: center">
-
-<img src="new3.png" alt="The RStudio IDE" width="370" />
-<p class="caption">
-Figure 6: The RStudio IDE
-</p>
-
-</div>
+# cont'd
+<img src="new3.png" width="370" style="display: block; margin: auto;" />
 
 # fitting the General linear mixed effects model (lme package)
 
-``` r
+
+```r
 model<-lme(distance~age,random=~age|Subject,data=Orthodont)
 
 #equatiomatic::extract_eq(model)
 ```
 
-- almost similar to the two stage results
++ almost similar to the two stage results 
 
 # fitting using the imer package
 
-``` r
+
+```r
 lin_0 <- lmer(distance ~ 1 + (1 | id), data = dental_long)
 summary(lin_0)
 #> Linear mixed model fit by REML. t-tests use Satterthwaite's method [
@@ -1172,13 +1039,13 @@ summary(lin_0)
 
 # interpretation
 
-- The estimated marginal mean of the dental distance is `\(\beta_0=24.02mm\)`
-- The estimated variance of the random-effect reflecting between-subject variability is 3.752; the estimated variance of the error term reflecting within-subject variability is 4.930.
-- The correlation between any two repeated measures (ICC) is equal to `\(3.76/(3.76+4.93)=0.43\)`
++ The estimated marginal mean of the dental distance is  `\(\beta_0=24.02mm\)`
++ The estimated variance of the random-effect reflecting between-subject variability is 3.752; the estimated variance of the error term reflecting within-subject variability is 4.930. 
++ The correlation between any two repeated measures (ICC) is equal to `\(3.76/(3.76+4.93)=0.43\)`
 
-# 
+#
 
-``` r
+```r
 ranova(lin_0)
 #> ANOVA-like table for random-effects: Single term deletions
 #> 
@@ -1193,20 +1060,7 @@ ranova(lin_0)
 
 # comment
 
-- The small p-value suggests evidence of between-individual heterogeneity, which support evidence for choosing a mixed-effects model instead of a only fixed-effects model.
++ The small p-value suggests evidence of between-individual heterogeneity, which support evidence for choosing a mixed-effects model instead of a only fixed-effects model.
 
-$$
-`\begin{aligned}
-  \operatorname{distance}_{i}  &\sim N \left(\alpha_{j[i]}, \sigma^2 \right) \\
-    \alpha_{j}  &\sim N \left(\mu_{\alpha_{j}}, \sigma^2_{\alpha_{j}} \right)
-    \text{, for id j = 1,} \dots \text{,J}
-\end{aligned}`
-$$
 
-$$
-`\begin{aligned}
-  \operatorname{Weight}_{i}  &\sim N \left(\alpha_{j[i]} + \beta_{1}(\operatorname{Mnth}), \sigma^2 \right) \\
-    \alpha_{j}  &\sim N \left(\gamma_{0}^{\alpha} + \gamma_{1}^{\alpha}(\operatorname{Prog}_{\operatorname{diet+exercise}}) + \gamma_{2}^{\alpha}(\operatorname{Prog}_{\operatorname{modified\ diet}}) + \gamma_{3}^{\alpha}(\operatorname{Mnth} \times \operatorname{Prog}_{\operatorname{diet+exercise}}) + \gamma_{4}^{\alpha}(\operatorname{Mnth} \times \operatorname{Prog}_{\operatorname{modified\ diet}}), \sigma^2_{\alpha_{j}} \right)
-    \text{, for ID j = 1,} \dots \text{,J}
-\end{aligned}`
-$$
+

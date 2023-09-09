@@ -65,6 +65,8 @@ In reality, we often cannot meet these criteria. In many cases, linear models ar
 # questionable
 
 <img src="images/linreg_bad.png" width="100%" style="display: block; margin: auto;" />
+
+
 # What's next
 
 So, how can we fit a better model? To answer this question, we must first consider what the regression  model is trying to do. The linear model is trying to fit the best __straight line__ that passes through the middle of the data, _without __overfitting___ the data, which is what would happen if we simply drew a line between each point and its neighbours. Linear models do this by finding the best fit straight line that passes through the data.
@@ -73,6 +75,7 @@ In the same way, additive models fit a curve through the data, while controlling
 
 
 #
+
 Let us use an example to demonstrate the difference between a linear regression and an additive model.
 
 
@@ -107,9 +110,7 @@ isit2 <- subset(isit, Season == 2) # OR
 
 Let's begin by trying to fit a linear regression model to the relationship between `Sources` and `SampleDepth`. We can use the `gam()` command from the `mgcv` package here to model an ordinary least squares regression. We will see below how to use `gam()` to specify a smoothed, non-linear term.
 
-#
-::::: columns
-::: column
+
 
 
 ```r
@@ -135,9 +136,7 @@ summary(linear_model)
 #> GCV =  60.19  Scale est. = 59.924    n = 453
 ```
 
-:::
 
-::: column
 
 
 ```r
@@ -164,16 +163,11 @@ summary(linear)
 #> F-statistic: 646.1 on 1 and 451 DF,  p-value: < 2.2e-16
 ```
 
-:::
-:::::
 
-#
 
 The linear model is explaining quite a bit of variance in our dataset ( `\(R_{adj}\)` = 0.588), which means it's a pretty good model, right? Well, let's take a look at how our model fits the data:
 
-#
-::::: columns
-::: column
+
 
 
 ```r
@@ -183,8 +177,7 @@ data_plot <- ggplot(data = isit2, aes(y = Sources, x = SampleDepth)) +
             colour = "red", size = 1.2) +
   theme_bw()
 ```
-:::
-::: column
+
 
 
 ```r
@@ -192,8 +185,7 @@ data_plot
 ```
 
 <img src="staticunnamed-chunk-9-1.png" width="1023.999552" style="display: block; margin: auto;" />
-:::
-:::::
+
 
 # what's happening
 
@@ -204,7 +196,7 @@ Are the assumptions of linear regression listed met in this case? As you may hav
 3.  The variance of the error is _not_ homoscedastic.
 4.  The errors are _not_ independent of each other.
 
-## we could manually specify a linear model with multiple predictor variables to try to accommodate this non-linear response. For example, we could try to build this linear model with multiple predictors:
+> we could manually specify a linear model with multiple predictor variables to try to accommodate this non-linear response. For example, we could try to build this linear model with multiple predictors:
 
 `$$y_i = \beta_0 + \beta_1(x_{1,i}) + \beta_2(x_{2,i}) + ... + \epsilon$$`
 
@@ -261,8 +253,7 @@ summary(gam_model)
 The variance explained by our model has increased  ($R_{adj}$ = 0.81)! When we compare the fit of the linear (red) and non-linear (blue) models, it is clear that the latter is more appropriate for our dataset:
 
 # visually compare the models
-::::: columns
-::: column
+
 
 
 ```r
@@ -271,8 +262,7 @@ data_plot <- data_plot +
                colour = "blue", size = 1.2)
 ```
 
-:::
-::: column
+
 
 
 ```r
@@ -282,8 +272,7 @@ data_plot
 <img src="staticunnamed-chunk-12-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
 
-:::
-:::::
+
 
 # Generalized linear models
 
@@ -500,6 +489,7 @@ fig <- theme_bw() +
         legend.key=element_blank(),
         panel.border = element_rect(colour="black", fill = NA))
 ```
+
 # Exploring the data graphically!
 
 

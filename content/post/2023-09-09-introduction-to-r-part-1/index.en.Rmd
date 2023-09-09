@@ -155,7 +155,7 @@ str(loan_data)
 Dataframes can be subsetted to contain only rows that satisfy specific conditions.
 ```{r}
 loan_amnt_10000 <- subset(loan_data, subset = loan_amnt == 10000)
-loan_amnt_10000
+loan_amnt_10000 %>% head()
 ```
 
 #
