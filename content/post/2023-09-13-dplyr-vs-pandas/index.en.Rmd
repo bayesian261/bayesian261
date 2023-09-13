@@ -1,0 +1,592 @@
+---
+title: dplyr vs Pandas
+author: Bongani Ncube
+date: '2023-09-13'
+slug: dplyr-vs-pandas
+categories:
+  - dplyr
+  - pandas
+  - python
+  - R
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-09-13T01:02:51+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitris_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+# Introduction
+
+Over the years , the debate has always been  ...which one is better for data science ,R or Python? . I say it all depends with where you are coming from and as long as you get the job done . Rstudio is a great `IDE` that supports many languages such as `sql` ,`R` and `Python` . In this tutorial i will show you how to use `python` in Rstudio as well as compare the two software syntax inorder to leverage the power of both languages. Make sure you have installed `anaconda` here https://repo.anaconda.com/archive/Anaconda3-2023.07-2-Windows-x86_64.exe
+
+# Set up
+
+```{r}
+# enable python in RMarkdown
+library(tidyverse)
+library(reticulate)
+use_condaenv("base")
+```
+
+## Reading A CSV
+### Python
+
+```{python}
+import pandas as pd
+
+df = pd.read_csv('diabetes.csv')
+df
+# verify whether the object df is a dataframe
+type(df)
+
+```
+
+### R
+
+```{r}
+
+library(tidyverse)
+
+df <- read_csv('diabetes.csv')
+
+# verify whether the object df is a dataframe
+class(df)
+
+```
+
+## Storing a DataFrame to a CSV
+
+### Python
+
+```{python}
+import pandas as pd
+
+# access the R main module via the 'r' object
+df = r.df
+
+# Storing a DataFrame to a CSV, do not include the index
+df.to_csv('diabetes_new.csv', index=False)
+
+# verify the dataframe is indeed saved there (review Method #1)
+diab = pd.read_csv('diabetes_new.csv')
+type(diab)
+
+```
+
+
+### R
+
+```{r}
+
+library(tidyverse)
+
+# access the python main module via the 'py' object
+df <- py$diab
+
+# Storing a DataFrame to a CSV
+write_csv(df, 'diabetes_clean.csv')
+
+# verify the dataframe is indeed saved there (review Method #1)
+diab_clean = read_csv('diabetes_clean.csv')
+class(diab_clean)
+
+```
+
+## dimensions
+
+### Python
+
+`shape` returns the dimensionality (number_of_rows, number_of_columns) of a dataframe
+
+```{python}
+import pandas as pd
+
+df = pd.read_csv('diabetes.csv')
+
+df.shape
+
+```
+
+### R
+
+Similary, `dim()` in base R returns the dimensionality of a dataframe
+
+```{r}
+library(readr) # a package in tidyverse that allows us to use read_csv
+
+df <- read_csv('diabetes.csv')
+
+dim(df)
+
+```
+
+## first terms
+### Python
+
+Use `head()` to show the top N rows. 
+
+```{python}
+import pandas as pd
+
+df = pd.read_csv('diabetes.csv')
+
+# print the top 3 rows in the dataframe
+print(df.head(3))
+
+```
+
+
+We can also sort the dataframe first then show the top N. For more on sorting a dataframe, please refer to method 13.
+
+```{python}
+# to sort the dataframe first then check out the top N
+df.sort_values('Age')\
+  .head(5)
+
+```
+
+### R
+
+To do these tasks in R is pretty straightforward. 
+
+```{r}
+
+df <- py$df # get the dataframe from python
+
+# print the top 3 rows in the dataframe
+print(df |>  head(3))
+
+```
+
+To sort first, we can use the `arrange()` function in the dplyr package.
+
+```{r}
+
+library(dplyr) 
+
+# to sort the dataframe first then check out the top N
+df |> 
+  arrange(Age) |> 
+  relocate(Age) |> 
+  head(5)
+
+```
+
+## Printing the Datatype of
+
+### Python
+
+```{python}
+# .dtypes returns the data type of all
+df.dtypes
+
+```
+
+### R
+
+The `str()` function in base R returns the data type of all, the default option also returns the dimensionality of the dataframe, length and head of each column, and gives attributes as sub structures. 
+
+```{r}
+df |> str(give.attr = FALSE)
+```
+
+Another option is `glimpse()` function in the dplyr package, which returns the dimensionality of the dataframe, data type of all and the head of each column as well.
+
+```{r}
+
+library(dplyr)
+
+df |> glimpse()
+
+```
+
+## Modifying the Datatype of a Column
+
+### Python
+
+```{python}
+import pandas as pd
+
+data = {'id': [1,2,3,4,5],
+        'name': ['Bongani', 'blaize', 'Ncube', 'Ropae', 'James']}
+      
+df1 = pd.DataFrame(data)
+
+df1.dtypes
+```
+
+The id field is of integer type. Use `astype()` method to change it to string/character type as follows. 
+
+```{python}
+df2 = df1.copy()
+# change the id field to string/character type
+df2['id'] = df2['id'].astype(str)
+df2.dtypes
+
+```
+
+### R
+
+```{r}
+# get the dataframe from python
+df1 = py$df1
+
+library(dplyr)
+
+df1 |>  glimpse()
+```
+
+Use the `as.character()` function to change the id field into string/character type, and use `as.numeric()` function to change it back to numeric. (id: what did I do? :p)
+
+```{r}
+
+# change the id field to string/character type
+df1 =df1 |> mutate(id = as.character(id))
+df1 |>  glimpse()
+
+# change the id field back to numeric type
+df1 = df1 |> mutate(id = as.numeric(id))
+df1 |> glimpse()
+
+```
+
+
+
+## Printing Descriptive Info about the DataFrame 
+
+### Python
+
+`info()` method can be used to print the missing-value stats and the datatypes. Recall that we can also get datatypes info using `.dtypes`.
+
+```{python}
+df.info()
+```
+
+### R
+
+`summary()` in base R returns the number of missings as well as some summary statistics. 
+
+
+```{r}
+
+df |>  summary()
+
+```
+
+## Printing Descriptive Info about the DataFrame (Method 2)
+
+### Python
+
+`describe()` returns standard statistics like mean, standard deviation, maximum etc. of every numeric-valued column
+
+```{python}
+df.describe()
+```
+
+`describe()` can also offer some info on categorical: the number of unique values, the most frequent value and its frequency, if we add `include = all` argument
+
+```{python}
+df.describe(include = 'all')
+```
+
+### R
+
+As discussed in Method 9, `summary()` in base R returns the number of missings as well as some summary statistics for all numerical and factor.  
+
+```{r}
+
+df = py$df
+
+df |>  summary()
+
+```
+
+
+For categorical variables, like `Species` in the iris dataset, `summary()` could give us its frequency counts if we turn it into factor type in R. 
+
+```{r}
+
+library(dplyr) #for mutate
+
+df |> 
+  mutate(Outcome = as.factor(Outcome)) |> # see method17 for more on mutate()   
+  summary()
+
+```
+
+In python, we could use `value_counts()` to get frequency counts. See #method27 for more.
+
+```{python}
+df['Outcome'].value_counts()
+
+```
+
+## Filling NaN values
+
+### Python
+
+We can use the `df.fillna()` method to replace missing values with a specific value. Let's start by creating a dataframe with missing values. 
+
+```{python}
+import pandas as pd
+import numpy as np
+
+df = pd.DataFrame({'col1': [1,2],
+                   'col2': [3,np.nan],
+                   'col3': ['A',np.nan]})
+print(df)
+```
+
+To replace the missing value with `0`, just do `.fillna(0)`. 
+
+```{python}
+# replace all NA values with 0, inplace = True means df itself will be modefied
+df.fillna(0, inplace = True)
+print(df)
+```
+
+Or if you only wnat to replace missing values in one particular column, simply select it first
+
+```{python}
+df2 = df.copy()
+df2['col2'].fillna(0, inplace = True) 
+print(df2)
+
+```
+
+
+### R
+
+We can use either `replace()` in base R to replace all missings in a dataframe with a specific value, or `replace_na` in tidyr to offer tailored replacement for each specific column.
+
+```{r}
+
+df = data.frame(col1 = c(1,2),
+                col2 = c(3, NA),
+                col3 = c('A',NA))
+
+print(df)
+
+# use replace() in base R to replace all missings to 0
+replace(df, is.na(df), 0)
+
+library(tidyr)
+# or use replace_na() in tidyverse to offer tailored replacement for each column. 
+df |>  replace_na(list(col2=0,col3="Unknown"))
+
+```
+
+
+
+## Grouping a DataFrame
+
+
+### Python
+
+We can use the `groupby` method in Pandas to group a dataframe and then perform aggregations with `agg()`. We could put both methods in one line, or wrap the chain of methods in brackets and show them in separate lines. The latter can enhance readability when we have multiple methods chained together. 
+
+```{python ,eval=FALSE}
+
+import pandas as pd
+
+df = pd.DataFrame([[1, 2,  "A"], 
+                   [5, 8,  "B"], 
+                   [3, 10, "B"]], 
+                  = ["col1", "col2", "col3"])
+
+# put both methods in one line 
+df.groupby('col3').agg({'col1':sum, 'col2':max}) # 
+
+```
+
+
+```{python ,eval=FALSE}
+# alternatively, show each method in separate lines
+(df
+ .groupby("col3")
+ .agg({"col1":sum, "col2":max}) # get sum for col1 and max for col2
+ )
+```
+
+Above we specify different aggregates for each column, but the code can be simplified if same aggregates are needed for all.
+
+```{python ,eval=FALSE}
+(df
+ .groupby("col3")
+ .agg(['min','max','median']) # get these three aggregates for all
+)
+
+```
+
+### R
+
+In `tidyverse`, similarly we use `group_by()` to do the grouping, then use `summarize()` for the aggregation.
+
+
+```{r,eval=FALSE}
+library(dplyr)
+
+df <- py$df
+
+df |> 
+  group_by(col3) |> 
+  summarise(col1_sum = sum(col1),
+            col2_max = max(col2))
+
+```
+
+## complex aggregation
+
+### R
+
+What if we want to do a slightly more complex aggregation which is not available as a default function/method? Let's say we want to add a column to represent percentage within each group. For example, below we have the sale of three types of fruits in two months. We would like to add a column `pct_month` to represent the sale of each fruit within each month. 
+
+```{r}
+
+df <- data.frame(
+  month = c(rep('Jan',3), rep('Feb',3)),
+  fruit = c('Apple', 'Kiwi','banana', 'Apple', 'Kiwi','banana'),
+  sale = c(20,30, 30,30,20,15)
+)
+
+df
+
+```
+
+
+Notice that here we need one value for *each row*, rather than one value for *each group*. Therefore, instead of using `summarize()` as we did above, this time `mutate()` function is our friend. We can also easily add a `round()` function to round the percentage.
+
+```{r}
+func<-function(x){
+  ratio<-x/sum(x)
+  return(ratio)
+}
+df |>  
+  group_by(month) |>  
+  mutate(pct_month = func(sale) |> round(3) * 100)
+
+```
+
+
+### Python
+
+Now let's see how to do this in Python. We can create a function first, then call it with the `transform()` method.
+
+```{python}
+df = r.df 
+
+def pct_total(s):
+  return s/sum(s)
+
+df['pct_month'] = (df
+                    .groupby('month')['sale']
+                    .transform(pct_total).round(3) * 100
+                    )
+df
+
+```
+
+## Create a dataframe in Python
+
+```{python}
+import pandas as pd
+
+df = pd.DataFrame({'col1': [1,5,3],
+                   'col2': [8,4,10],
+                   'col3': ['A','B','B']})
+df
+```
+
+
+### Load the dataframe into R
+
+```{r}
+df <- py$df #load the df object created in Python above
+
+df
+```
+
+## Filtering a DataFrame1: Boolean Filtering
+
+### Filter with a value
+
+A row can be selected when the condition specified is evaluated to be True for it. For example 
+
+### Python
+
+```{python}
+df[df['col2']>5]
+
+```
+
+
+```{python}
+# or to improve readability, we could do it in two steps
+col2_larger_than_5 = df['col2'] > 5
+df[col2_larger_than_5]
+
+```
+
+
+
+
+### R
+
+```{r}
+
+library(dplyr)
+
+df |> 
+  filter(col2 > 5)
+
+
+```
+
+
+
+
+
+

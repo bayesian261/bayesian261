@@ -65,11 +65,11 @@ library(GGally)     # advanced plot
 library(car)        # useful for anova/wald test
 library(Epi)        # easy getting CI for model coef/pred
 library(lme4)       # linear mixed-effects models
-library(lmerTest)   # test for linear mixed-effects models
+#library(lmerTest)   # test for linear mixed-effects models
 library(emmeans)    # marginal means
-library(multcomp)   # CI for linear combinations of model coef
+#library(multcomp)   # CI for linear combinations of model coef
 library(geepack)    # generalized estimating equations
-library(ggeffects)  # marginal effects, adjusted predictions
+#library(ggeffects)  # marginal effects, adjusted predictions
 library(gt)      
 library(nlme)# nice tables
 library(flextable)

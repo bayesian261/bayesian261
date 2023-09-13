@@ -10,39 +10,39 @@ sections:
 - block: features
   content:
     items:
-    - description: 110%
+    - description: Proficient in using R for data wrangling , reproducible research and statistical modeling 
       icon: r-project
       icon_pack: fab
       name: R/Tidyverse/Tidymodels
-    - description: 90%
+    - description: A strong base in building statistical models and conducting statistical data analysis
       icon: chart-line
       icon_pack: fas
       name: Statistics and modeling
-    - description: 90%
+    - description: Passionate about mathematical frameworks such as linear algebra , Calculus and Differential equations
       icon: calculator
       icon_pack: fas
       name: Mathematics
-    - description: 90%
+    - description: Survival analysis afficionado
       icon: dashboard
       icon_pack: fa
       name: Time to event studies
-    - description: 80%
+    - description: Able to build and deploy supervised and unsupervised machine learning models
       icon: atom
       icon_pack: fas
       name: Machine Learning
-    - description: 70%
+    - description: data wrangling and visualisation
       icon: python
       icon_pack: fab
       name: python
-    - description: 70%
+    - description: Relational databases and SQL Queries
       icon: database
       icon_pack: fa
       name: MYSQL
-    - description: 80%
+    - description: chart building and interprettation
       icon: pie-chart
       icon_pack: fa
       name: Data Visualisation
-    - description: 80%
+    - description: Excel junky
       icon: file-excel
       icon_pack: fa
       name: Excel
