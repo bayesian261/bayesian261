@@ -1,0 +1,1088 @@
+---
+title: Loan default prediction using Tidymodels
+author: Bongani Ncube
+date: '2023-09-15'
+slug: classification-models-using-tidymodels
+categories:
+  - classification
+  - datascience
+  - dataviz
+  - ggplot2
+  - GLMS
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-09-15T10:05:16+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+
+### Machine Learning Scientist With an R track
+
+[View certificate](https://www.datacamp.com/statement-of-accomplishment/track/25b6113cff605043f45a51720cfbcb68068016f4?raw=1)
+
+```{r,echo=FALSE}
+knitr::include_graphics("ncubebongi.gif")
+```
+
+## A gentle introduction to classification
+
+###
+
+> *Classification* is a form of machine learning in which you train a model to predict which category an item belongs to. *Categorical* data has distinct 'classes', rather than numeric values.
+
+### Details 
+
+Classification is an example of a *supervised* machine learning technique, which means it relies on data that includes known *feature* values (for example, diagnostic measurements for patients) as well as known *label* values (for example, a classification of non-diabetic or diabetic). A classification algorithm is used to fit a subset of the data to a function that can calculate the `probability` for each class label from the feature values. The remaining data is used to evaluate the model by comparing the predictions it generates from the features to the known class labels.
+
+The simplest form of classification is *binary* classification, in which the label is 0 or 1, representing one of two classes; for example, "True" or "False"; "Internal" or "External"; "Profitable" or "Non-Profitable"; and so on.
+
+## setup libraries
+
+```{r}
+suppressWarnings(if(!require("pacman")) install.packages("pacman"))
+
+pacman::p_load('tidyverse', 
+               'tidymodels', 
+               'ranger',
+               "themis",
+               "dlookr",
+               "naniar",
+               "VIM",
+               'vip', 
+               'skimr', 
+               'here', 
+               'kernlab',
+               'janitor', 
+               'paletteer',
+               "ggthemes",
+               "data.table",
+               "magrittr")
+
+lst <- c(
+    'tidyverse', 
+               'tidymodels', 
+               'ranger',
+               "themis",
+               "dlookr",
+               "naniar",
+               "VIM",
+               'vip', 
+               'skimr', 
+               'here', 
+               'kernlab',
+               'janitor', 
+               'paletteer',
+               "ggthemes",
+               "data.table",
+               "magrittr"
+)
+
+as_tibble(installed.packages())  |>
+  select(Package, Version)  |> 
+  filter(Package %in% lst)
+
+```
+
+## Binary classification
+
+Let's start by looking at an example of *binary classification*, where the model must predict a label that belongs to one of two classes. In this exercise, we'll train a binary classifier to predict whether or not a customer defaulted from a loan or not or not.
+
+## Import the data and clean
+
+The first step in any machine learning project is to `explore the data` . So, let's begin by importing a CSV file of loan data into a `tibble` (a modern a modern reimagining of the data frame):
+
+```{r read_url, message=F, warning=F, exercise.setup = "setupA"}
+# Read the csv file into a tibble
+loan_data <- read_csv(file = "loan_data.csv") |> 
+  dplyr::select(-1) |> 
+  mutate(`default status`=ifelse(loan_status==1,
+                               "defaulted","non-default")) |>
+  mutate_if(is.character,as.factor)
+
+```
+
+## data exploration
+
+```{r}
+## to avoid function conflicts
+
+group_by<-dplyr::group_by
+select<-dplyr::select
+
+iv_rates <- loan_data |>
+  select(home_ownership, loan_status) |>
+  mutate(home_ownership=as.factor(home_ownership)) |> 
+  group_by(home_ownership) |>
+  summarize(avg_div_rate = mean(loan_status, na.rm=TRUE)) |>
+  ungroup() |>
+  mutate(
+    regions = home_ownership |>
+      fct_reorder(avg_div_rate))
+
+plot<-iv_rates |>
+  ggplot(aes(x=regions, y=avg_div_rate, fill=regions)) + 
+  geom_col(color="black",width = 0.5)+ 
+  theme(legend.position="bottom") + 
+  geom_label(aes(label=scales::percent(avg_div_rate)), color="white") + 
+  labs(
+    title = "default status by Home ownership status",
+    subtitle = "Credit Risk theory",
+    y = "Default Rates", 
+    x = "home ownership",
+    fill="home ownership",
+    caption="B.Ncube::Data enthusiast") + 
+  scale_y_continuous(labels = scales::percent)
+plot
+```
+
+### Make it look more fancy!
+
+```{r,fig.width=7}
+library(tvthemes)
+library(extrafont)
+loadfonts(quiet=TRUE)
+
+plot+
+  ggthemes::scale_fill_tableau()+
+  tvthemes::theme_theLastAirbender(title.font="sans",text.font = "sans")
+```
+
+## crosstabs
+
++ How to use crosstabs in base R
+
+```{r base,Bongani Ncube}
+loan_data |> 
+  select_if(is.factor) %$%
+  table(grade,home_ownership) |> 
+  prop.table() * (100) |> 
+  round(2)
+```
+
++ let's use `janitor` for crosstabs
+
+```{r janitor,Bongani Ncube}
+loan_data |> 
+  tabyl(grade,home_ownership) |> 
+  adorn_totals(c('row','col')) |> # add  total for both rows and columns
+  adorn_percentages("all") |> # pct among all for each cell
+  adorn_pct_formatting(digits = 1)  |> 
+  adorn_ns() # add counts 
+```
+## further exploration
+
+```{r, warning=FALSE,message=FALSE}
+
+cont_table <- loan_data %$% 
+  table(grade,home_ownership)
+
+# Let's create a frequency table
+
+freq_df <- apply(cont_table, 2, function(x) round(x/sum(x),2))
+                 
+# Change the structure of our frequency table.
+melt_df <- melt(freq_df)
+```
+
+```{r}
+names(melt_df) <- c("grade", "home_ownership", "Frequency")
+
+
+ggplot(melt_df, aes(x = grade, y = Frequency, fill = home_ownership)) +
+  geom_col(position = "stack") +
+  facet_grid(home_ownership ~ .) + 
+scale_fill_brewer(palette="Dark2") + theme_minimal() + theme(legend.position="None") +
+  ggthemes::scale_fill_tableau()+
+  ggthemes::theme_fivethirtyeight()
+
+```
+
++ most people in both home ownership statuses are of `salary grade A`
+
+
+## Mosaic plot
+
+```{r}
+conti_df <- loan_data %$% 
+  table(grade,home_ownership) |> 
+  as.data.frame.matrix()
+
+
+conti_df$groupSum <- rowSums(conti_df)
+conti_df$xmax <- cumsum(conti_df$groupSum)
+conti_df$xmin <- conti_df$xmax - conti_df$groupSum
+# The groupSum column needs to be removed; don't remove this line
+conti_df$groupSum <- NULL
+
+conti_df$grade <- rownames(conti_df)
+
+melt_df <- melt(conti_df, id.vars = c("grade", "xmin", "xmax"), variable.name = "home_ownership")
+
+df_melt <- melt_df |>
+  group_by(grade) |>
+  mutate(ymax = cumsum(value/sum(value)),
+         ymin = ymax - value/sum(value))
+
+
+index <- df_melt$xmax == max(df_melt$xmax)
+
+
+
+df_melt$xposn <- df_melt$xmin + (df_melt$xmax - df_melt$xmin)/2
+
+# geom_text for ages (i.e. the x axis)
+
+
+
+p1<- ggplot(df_melt, aes(ymin = ymin,
+                 ymax = ymax,
+                 xmin = xmin,
+                 xmax = xmax,
+                 fill = home_ownership)) +
+  geom_rect(colour = "white") +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_fill_brewer(palette="RdBu") +
+  theme_minimal() 
+
+p1 + 
+  geom_text(aes(x = xposn, label = grade),
+            y = 0.15, angle = 90,
+            size = 3, hjust = 1,
+            show.legend = FALSE) + labs(title="Mosaic Plot") + theme(plot.title=element_text(hjust=0.5))+
+  ggthemes::scale_fill_tableau()+
+  ggthemes::theme_fivethirtyeight()
+```
+
+## Alluvial Diagram
+
+```{r alluvial, message=FALSE, warning=FALSE, echo=TRUE, fig.height=6, fig.width=9}
+
+library(alluvial)
+
+tbl_summary <- loan_data |>
+  mutate(default_status=ifelse(loan_status==1,
+                               "defaulted","non-default")) |>
+  group_by(default_status, grade, home_ownership) |>
+  summarise(N = n()) |> 
+  ungroup() |>
+  na.omit()
+
+  
+alluvial(tbl_summary[, c(1:4)],
+
+         freq=tbl_summary$N, border=NA,
+
+         col=ifelse(tbl_summary$default_status == "defaulted", "blue", "gray"),
+
+         cex=0.65,
+
+         ordering = list(
+
+           order(tbl_summary$default_status, tbl_summary$home_ownership=="RENT"),
+
+           order(tbl_summary$grade, tbl_summary$home_ownership=="RENT"),
+
+           NULL,
+
+           NULL))
+
+```
+
+## distribution of numeric variables
+
+```{r}
+
+# Histogram of all numeric variables
+loan_data %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+  facet_wrap(~ key, scales = "free") +
+  geom_histogram(bins=30,fill=tvthemes::avatar_pal()(1))+
+  ggthemes::theme_wsj()
+```
+
+## further exploration
+```{r}
+library(ggpubr)
+heatmap_tbl <- iv_rates <- loan_data |>
+  select(home_ownership, loan_status,grade) |>
+  mutate(home_ownership=as.factor(home_ownership)) |> 
+  group_by(grade,home_ownership) |>
+  summarize(avg_div_rate = mean(loan_status, na.rm=TRUE)) |>
+  ungroup() |>
+  mutate(
+    regions = home_ownership |>
+      fct_reorder(avg_div_rate)
+)
+
+
+
+heatmap_tbl |>
+  ggplot(aes(grade, regions)) + 
+  geom_tile(aes(fill=avg_div_rate))+
+  scale_fill_gradient2_tableau()+ 
+  facet_wrap(~grade) + 
+  theme_minimal() + 
+  theme(legend.position="none", axis.text.x = element_text(angle=45, hjust=1)) +
+  geom_text(aes(label = scales::percent(avg_div_rate)), size=2.5) + 
+labs(
+    fill = "",
+    title = "loan status by salary grade in grouped by home ownership",
+    y="Home ownership"
+)
+```
+
+
+## exploring for missing values
+
+```{r}
+# checking if there are any missing values in the |>
+anyNA(loan_data)
+
+# explore the number of missing values per each variable
+colSums(is.na(loan_data))
+
+# get the proportion of missing data 
+prop_miss(loan_data)
+
+# get the summary of missing data
+miss_var_summary(loan_data)
+```
+
+We can explore the pattern of missing data using `aggr()` function from `VIM`\index{VIM}. The `numbers` and `prop` arguments indicate that we want the missing information on the y-axis of the plot to be in number not proportion.
+
+```{r}
+aggr(loan_data, numbers = TRUE, prop = FALSE)
+```
+
+```{r}
+dlookr::plot_na_pareto(loan_data)
+```
+
+-   The proportion of missing values to the whole dataset seems so small to be neglected
+-   counts and proportions of missing values are presented in the pareto chart in descenting order by bars
+
+```{r}
+dlookr::plot_na_hclust(loan_data)
+```
+
+## Discriptive statistics
+
+```{r}
+select<-dplyr::select
+loan_data <- loan_data |>
+  mutate(`default status`=ifelse(loan_status==1,"defaulted","non-default")) 
+
+mental_act<- loan_data |> 
+  select(`default status`,grade) |>
+  table()
+
+# chisquared test
+res <-chisq.test(mental_act)
+# extract chi-sqaured test objects
+result_method <- res$method
+result_stat <- paste0(attributes(res$statistic), ": ", round(res$statistic, 2))
+result_pvalue <- paste0("p-value: ", scientific(res$p.value,5))
+result_df <- paste0(attributes(res$parameter), ": ", res$parameter)
+#create the plot
+loan_data |>
+  ggplot(aes(`default status`, fill = grade)) +
+  geom_bar(position = "fill")+
+  annotate("text", x = 1.5, y = 0.6, size = 3, color = "black", label = result_method, fontface = "bold")+
+  annotate("text", x = 1.5, y = 0.55, size = 3, color = "black", label = result_stat, fontface = "bold")+
+  annotate("text", x = 1.5, y = 0.5, size = 3, color = "black", label = result_pvalue, fontface = "bold")+
+  annotate("text", x = 1.5, y = 0.45, size = 3, color = "black", label = result_df, fontface = "bold")+
+  annotate("text", x = 1.5, y = 0.4, size = 3, color = "black", label = "The test shows a significant association between default status and grade", fontface = "bold")+
+  theme(axis.title.y = element_blank())+
+  labs(title = "default by grade",
+       subtitle = "grade A and B are more prone to default",
+       x = "default status",
+       fill= "grade",
+       y="Proportion",
+       caption = "Visualisation: Bongani Ncube | Data: Credit risk")+
+  tvthemes::scale_fill_avatar()+
+  tvthemes::theme_avatar()
+
+```
+
+-   there is an association between grade and default status at 5% level of significance
+
+## boxplots
+
+```{r}
+subset <- loan_data |>
+  dplyr::select(-loan_status,-grade,-home_ownership) |> 
+  na.omit()
+
+
+# Bring in external file for visualisations
+source('functions/visualisations.R')
+
+# Use plot function
+plot <- histoplotter(subset, `default status`, 
+                     chart_x_axis_lbl = '`default status`', 
+                     chart_y_axis_lbl = 'Measures',boxplot_color = 'navy', 
+                     boxplot_fill = '#89CFF0', box_fill_transparency = 0.2) 
+
+# Add extras to plot
+plot + 
+  ggthemes::theme_solarized() +
+  theme(legend.position = 'none') + 
+  scale_color_manual(values=c('defaulted' = 'red', 
+                              'non-defaulted' = 'blue'))
+
+```
+
+-   boxplots show that age and annual income have outliers
+
+```{r}
+p_term <- ggplot(loan_data , aes(x=as.factor(home_ownership) ,fill = `default status`)) + 
+  stat_count(aes(y = (..count..)/sum(..count..)), 
+             geom="bar", position="fill", width = 0.3)  + 
+  scale_y_continuous(labels = percent_format())+
+  labs(x="Loan Term in Months", y="Ratio") + 
+  ggtitle("Ratio of loan status w.r.t grade") + 
+  theme_hc(base_size = 18, base_family = "sans") + 
+  ggthemes::scale_fill_tableau()+
+  ggthemes::theme_fivethirtyeight()+
+  tvthemes::scale_fill_avatar() + 
+  theme(plot.background = element_rect(fill="white"), axis.text.x = element_text(colour = "black"),axis.text.y = element_text(colour = "black")) 
+      # View Plot  
+p_term
+```
+
++ Let's check now default ratio vs huge and small loans (say something above and below median)
+
+```{r, fig.height= 4}
+# default ratio vs huge and small loans
+
+loan_data %>%
+  mutate(high_low=ifelse(loan_amnt>median(loan_amnt),"high","low")) %>% 
+  select(loan_status, high_low) %>%
+  group_by(loan_status, high_low) %>%
+  summarise(NObs = n()) %>%
+  group_by(high_low) %>%
+  mutate(default_Ratio = if_else(loan_status == 1, round(NObs/sum(NObs)*100,2), NA_real_)) %>%
+  mutate(loan_status = loan_status |> as.factor()) %>%
+  ggplot() +
+  geom_bar(aes(high_low, NObs, fill = loan_status), alpha = 0.5, stat = "identity", position = "dodge") +
+  geom_line(data = . %>% filter(loan_status == "1"),
+            aes(high_low, default_Ratio *100, group = loan_status), col = "firebrick") +
+  geom_point(data = . %>% filter(loan_status == "1"),
+             aes(high_low, default_Ratio *100), size = 2, col = "firebrick") +
+  labs(title = "default Ratio  vs loan amount",
+       y = "Number of observations") +
+  tvthemes::scale_fill_avatar() +
+  scale_y_continuous(sec.axis = sec_axis(~ . / 100)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 14))
+
+```
+
+## let`s look at correlations
+
+```{r}
+mydatacor=cor(loan_data |> select_if(is.numeric) |> na.omit())
+corrplot::corrplot(mydatacor,
+                   method="color",type="upper",
+                   addCoef.col="black",
+                   tl.col="black",
+                   tl.cex=0.9,
+                   diag=FALSE,
+                   number.cex=0.7
+)
+
+```
+
++ there is a small degree of correlation between loan amount and annual income
+
+## Modeling the data
+
+### data preprocessing
+
++ the proportion of missing values is small and hence can be neglected so for this tutorial i removed all missing values
+
+```{r plot3, message=F, warning=F}
+# Remove missing data
+cases<-complete.cases(loan_data)
+
+loan_data_select<-loan_data[cases,] |> 
+  mutate(loan_status=as.factor(loan_status)) 
+```
+
+## is the data balanced?
+
+```{r}
+loadfonts(quiet=TRUE)
+
+iv_rates <- loan_data_select |>
+  group_by(`default status`) |>
+  summarize(count = n()) |> 
+  mutate(prop = count/sum(count)) |>
+  ungroup() 
+
+plot<-iv_rates |>
+  ggplot(aes(x=`default status`, y=prop, fill=`default status`)) + 
+  geom_col(color="black",width = 0.5)+ 
+  theme(legend.position="bottom") + 
+  geom_label(aes(label=scales::percent(prop)), color="white") + 
+  labs(
+    title = "default ratio",
+    subtitle = "",
+    y = "proportion(%)", 
+    x = "",
+    fill="",
+    caption="B.Ncube::Data enthusiast") + 
+  scale_y_continuous(labels = scales::percent)+ 
+  tvthemes::scale_fill_kimPossible()+
+  tvthemes::theme_theLastAirbender(title.font="sans",
+                                   text.font = "sans")+
+  theme(legend.position = 'right')
+plot
+```
+
++ the dataset is not balanced so we have to perform `SMOTE` (synthetic Minority Oversampling Technique)
+
+## Split the data
+
+Our  includes known values for the label, so we can use this to train a classifier so that it finds a statistical relationship between the features and the label value; but how will we know if our model is any good? How do we know it will predict correctly when we use it with new data that it wasn't trained with?
+
+It is best practice to hold out some of your data for **testing** in order to get a better estimate of how your models will perform on new data by comparing the predicted labels with the already known labels in the test set.
+
+In R, the amazing Tidymodels framework provides a collection of packages for modeling and machine learning using **tidyverse** principles.
+
+-   `initial_split()`: specifies how data will be split into a training and testing set
+
+-   `training()` and `testing()` functions extract the data in each split
+
+### data spliting
+
+```{r plot, message=F, warning=F}
+# Split data into 70% for training and 30% for testing
+set.seed(2056)
+loan_data_split <- loan_data_select|>
+  select(-`default status`) |> 
+  initial_split(prop = 0.70)
+
+
+# Extract the data in each split
+loan_data_train <- training(loan_data_split)
+loan_data_test <- testing(loan_data_split)
+
+
+# Print the number of cases in each split
+cat("Training cases: ", nrow(loan_data_train), "\n",
+    "Test cases: ", nrow(loan_data_test), sep = "")
+
+
+# Print out the first 5 rows of the training set
+loan_data_train|>
+  slice_head(n = 5)
+
+```
+
+## Train and Evaluate a Binary Classification Model
+
+OK, now we're ready to train our model by fitting the training features to the training labels (`loan status`). There are various algorithms we can use to train the model. In this example, we'll use *`Logistic Regression`*, Logistic regression is a binary classification algorithm, meaning it predicts 2 categories.
+
+### Logistic Regression formulation
+
+```{r log_glm, message=F, warning=F}
+# Make a model specifcation
+logreg_spec <- logistic_reg()|>
+  set_engine("glm")|>
+  set_mode("classification")
+
+# Print the model specification
+logreg_spec
+```
+
+After a model has been *specified*, the model can be `estimated` or `trained` using the `fit()` function.
+
+```{r log_glm_fit, message=F, warning=F}
+# Train a logistic regression model
+logreg_fit <- logreg_spec|>
+  fit(loan_status ~ ., data = loan_data_train)
+
+# Print the model object
+logreg_fit |> 
+  pluck("fit") |> 
+  summary()
+```
+
+The model print out shows the coefficients learned during training.
+
+Now we've trained the model using the training data, we can use the test data we held back to evaluate how well it predicts using `predict()`.
+
+```{r model_eval,message=F,warning=F}
+# Make predictions then bind them to the test set
+results <- loan_data_test|>
+  select(loan_status)|>
+  bind_cols(logreg_fit|>
+              predict(new_data = loan_data_test))
+
+
+# Compare predictions
+results|>
+  slice_head(n = 10)
+```
+
+Tidymodels has a few more tricks up its sleeve:`yardstick` - a package used to measure the effectiveness of models using performance metrics.
+
+you might want to check the *accuracy* of the predictions - in simple terms, what proportion of the labels did the model predict correctly?
+
+`yardstick::accuracy()` does just that!
+
+```{r acc,message=F,warning=F}
+# Calculate accuracy: proportion of data predicted correctly
+accuracy(data = results, truth = loan_status, estimate = .pred_class)
+```
+
+The accuracy is returned as a decimal value - a value of 1.0 would mean that the model got 100% of the predictions right; while an accuracy of 0.0 is, well, pretty useless 😐!
+
+The [`conf_mat()`] function from yardstick calculates this cross-tabulation of observed and predicted classes.
+
+```{r conf_mat}
+# Confusion matrix for prediction results
+conf_mat(data = results, truth = loan_status, estimate = .pred_class)
+
+```
+
+Awesome!
+
+Let's interpret the confusion matrix. Our model is asked to classify cases between two binary categories, category `1` for people who defaulted and category `0` for those who did not.
+
+-   If your model predicts a person as `1` (defaulted) and they belong to category `1` (defaulted) in reality we call this a `true positive`, shown by the top left number `0`.
+
+-   If your model predicts a person as `0` (non-defaulted) and they belong to category `1` (defaulted) in reality we call this a `false negative`, shown by the bottom left number `849`.
+
+-   If your model predicts a patient as `1` (defaulted) and they belong to category `0` (negative) in reality we call this a `false positive`, shown by the top right number `0`.
+
+-   If your model predicts a patient as `0` (negative) and they belong to category `0` (negative) in reality we call this a `true negative`, shown by the bottom right number `6823`.
+
+Our confusion matrix can thus be expressed in the following form:
+
+| Truth |
+|:-----:|
+
+|               |                    |                  |
+|:-------------:|:------------------:|:----------------:|
+| **Predicted** |         1          |        0         |
+|       1       | $6823 _{\ \ \ TP}$ | $849_{\ \ \ FP}$ |
+|       0       |   $0_{\ \ \ FN}$   |  $0_{\ \ \ TN}$  |
+
+Note that the correct (*`true`*) predictions form a diagonal line from top left to bottom right - these figures should be significantly higher than the *false* predictions if the model is any good.
+
+The confusion matrix is helpful since it gives rise to other metrics that can help us better evaluate the performance of a classification model. Let's go through some of them:
+
+🎓 Precision: `TP/(TP + FP)` defined as the proportion of predicted positives that are actually positive.
+
+🎓 Recall: `TP/(TP + FN)` defined as the proportion of positive results out of the number of samples which were actually positive. Also known as `sensitivity`.
+
+🎓 Specificity: `TN/(TN + FP)` defined as the proportion of negative results out of the number of samples which were actually negative.
+
+🎓 Accuracy: `TP + TN/(TP + TN + FP + FN)` The percentage of labels predicted accurately for a sample.
+
+🎓 F Measure: A weighted average of the precision and recall, with best being 1 and worst being 0.
+
+Tidymodels provides yet another succinct way of evaluating all these metrics. Using `yardstick::metric_set()`, you can combine multiple metrics together into a new function that calculates all of them at once.
+
+```{r metric_set}
+# Combine metrics and evaluate them all at once
+eval_metrics <- metric_set(ppv, recall, accuracy, f_meas)
+eval_metrics(data = results, truth = loan_status, estimate = .pred_class)
+
+```
+
+Until now, we've considered the predictions from the model as being either 1 or 0 class labels. Actually, things are a little more complex than that. Statistical machine learning algorithms, like logistic regression, are based on `probability`; so what actually gets predicted by a binary classifier is the probability that the label is true ($P(y)$) and the probability that the label is false ($1-P(y)$). A threshold value of 0.5 is used to decide whether the predicted label is a `1` ($P(y)>0.5$) or a `0` ($P(y)<=0.5$). Let's see the probability pairs for each case:
+
+```{r prob}
+# Predict class probabilities and bind them to results
+results <- results|>
+  bind_cols(logreg_fit|>
+              predict(new_data = loan_data_test, type = "prob"))
+
+  
+
+
+# Print out the results
+results|>
+  slice_head(n = 10)
+
+
+```
+
+The decision to score a prediction as a 1 or a 0 depends on the threshold to which the predicted probabilities are compared. If we were to change the threshold, it would affect the predictions; and therefore change the metrics in the confusion matrix. A common way to evaluate a classifier is to examine the *true positive rate* (which is another name for recall) and the *false positive rate* (1 - specificity) for a range of possible thresholds. These rates are then plotted against all possible thresholds to form a chart known as a *received operator characteristic (ROC) chart*, like this:
+
+```{r roc_curve}
+# Make a roc_chart
+results|>
+  roc_curve(truth = loan_status, .pred_0)|>
+  autoplot()
+
+```
+
+The ROC chart shows the curve of the true and false positive rates for different threshold values between 0 and 1. A perfect classifier would have a curve that goes straight up the left side and straight across the top. The diagonal line across the chart represents the probability of predicting correctly with a 50/50 random prediction; so you want the curve to be higher than that (or your model is no better than simply guessing!).
+
+The area under the curve (AUC) is a value between 0 and 1 that quantifies the overall performance of the model. One way of interpreting AUC is as the probability that the model ranks a random positive example more highly than a random negative example. The closer to 1 this value is, the better the model. Once again, Tidymodels includes a function to calculate this metric: `yardstick::roc_auc()`
+
+```{r auc}
+# Compute the AUC
+results|>
+  roc_auc(loan_status, .pred_1)
+
+```
+
+## Recipes and workflows
+
+#### Data preprocessing with recipes
+
+In this case, the ROC curve and its AUC indicate that the model performs better than a random guess
+
+In practice, it's common to perform some preprocessing of the data to make it easier for the algorithm to fit a model to it. There's a huge range of preprocessing transformations you can perform to get your data ready for modeling, but we'll limit ourselves to a few common techniques:
+
+-   Scaling numeric features so they're on the same scale. This prevents features with large values from producing coefficients that disproportionately affect the predictions.
+
+-   Encoding categorical variables. For example, by using a *one hot encoding* technique you can create "*dummy*" or *indicator variables* which replace the original categorical feature with numeric columns whose values are either 1 or 0.
+
+## 
+
+-   in this excercise i perfom `smote` analysis to the data since it was not balanced
+
+```{r recipes}
+# Preprocess the data for modelling
+loan_data_recipe <- recipe(loan_status ~ ., data = loan_data_train)|>
+  step_mutate(grade = factor(grade))|>
+  step_normalize(all_numeric_predictors())|>
+  step_dummy(all_nominal_predictors()) |> 
+  step_smote(loan_status)
+
+# Print the recipe
+loan_data_recipe
+
+```
+```{r}
+loadfonts(quiet=TRUE)
+
+iv_rates <- loan_data_recipe|> 
+  prep()|> 
+  juice() |>
+  group_by(loan_status) |>
+  summarize(count = n()) |> 
+  mutate(prop = count/sum(count)) |>
+  ungroup() 
+
+plot<-iv_rates |>
+  ggplot(aes(x=loan_status, y=prop, fill=loan_status)) + 
+  geom_col(color="black",width = 0.5)+ 
+  theme(legend.position="bottom") + 
+  geom_label(aes(label=scales::percent(prop)), color="white") + 
+  labs(
+    title = "default ratio after `SMOTE`",
+    subtitle = "",
+    y = "proportion(%)", 
+    x = "",
+    fill="",
+    caption="B.Ncube::Data enthusiast") + 
+  scale_y_continuous(labels = scales::percent)+ 
+  tvthemes::scale_fill_kimPossible()+
+  tvthemes::theme_theLastAirbender(title.font="sans",
+                                   text.font = "sans")+
+  theme(legend.position = 'right')
+plot
+```
+
+We just created a recipe containing an outcome and its corresponding predictors, specifying that the grade variable should be converted to a categorical variable (factor), all the numeric predictors normalized and creating dummy variables for the nominal predictors as well as apply synthetic minority sampling 🙌.
+
+#### Bundling it all together using a workflow
+
+Now that we have a recipe and a model specification we defined previously, we need to find a way of bundling them together into an object that will first preprocess the data, fit the model on the preprocessed data and also allow for potential post-processing activities.
+
+```{r workflow}
+# Redefine the model specification
+logreg_spec <- logistic_reg()|>
+  set_engine("glm")|>
+  set_mode("classification")
+
+# Bundle the recipe and model specification
+lr_wf <- workflow()|>
+  add_recipe(loan_data_recipe)|>
+  add_model(logreg_spec)
+
+# Print the workflow
+lr_wf
+
+```
+
+After a workflow has been *specified*, a model can be `trained` using the [`fit()`](https://tidymodels.github.io/parsnip/reference/fit.html) function.
+
+```{r fit_wf}
+# Fit a workflow object
+lr_wf_fit <- lr_wf|>
+  fit(data = loan_data_train)
+
+# Print wf object
+lr_wf_fit 
+
+```
+```{r}
+lr_fitted_add <- lr_wf_fit|>
+  extract_fit_parsnip()|> 
+  tidy() |> 
+  mutate(Significance = ifelse(p.value < 0.05, 
+                               "Significant", "Insignificant"))|> 
+  arrange(desc(p.value)) 
+#Create a ggplot object to visualise significance
+plot <- lr_fitted_add|> 
+  ggplot(mapping = aes(x=term, y=p.value, fill=Significance)) +
+  geom_col() + 
+  ggthemes::scale_fill_tableau() +
+  theme(axis.text.x = element_text(face="bold", 
+                                   color="#0070BA",
+                                   size=8, 
+                                   angle=90)) +
+  geom_hline(yintercept = 0.05, col = "black", lty = 2) +
+  labs(y="P value", 
+       x="Terms",
+       title="P value significance chart",
+       subtitle="significant variables in the model",
+       caption="Produced by Bongani Ncube")
+
+plotly::ggplotly(plot) 
+```
+
++ all variables whose p value lies below the black line are `statistically significant`
+
+👏! We now have a trained workflow. The workflow print out shows the coefficients learned during training.
+
+This allows us to use the model trained by this workflow to predict labels for our test set, and compare the performance metrics with the basic model we created previously.
+
+```{r eval_wf}
+# Make predictions on the test set
+results <- loan_data_test|>
+  select(loan_status)|>
+  bind_cols(lr_wf_fit|>
+              predict(new_data = loan_data_test))|>
+  bind_cols(lr_wf_fit|>
+              predict(new_data = loan_data_test, type = "prob"))
+
+# Print the results
+results|>
+  slice_head(n = 10)
+
+```
+
+Let's take a look at the confusion matrix:
+
+```{r conf_mat2}
+# Confusion matrix for prediction results
+results|>
+  conf_mat(truth = loan_status, estimate = .pred_class)
+
+```
+
+```{r conf_mat_viz}
+# Visualize conf mat
+update_geom_defaults(geom = "rect", new = list(fill = "midnightblue", alpha = 0.7))
+
+results|>
+  conf_mat(loan_status, .pred_class)|>
+  autoplot()
+
+```
+
+What about our other metrics such as ppv, sensitivity etc?
+
+```{r eval_met}
+# Evaluate other desired metrics
+eval_metrics(data = results, truth = loan_status, estimate = .pred_class)
+
+# Evaluate ROC_AUC metrics
+results|>
+  roc_auc(loan_status, .pred_0)
+
+# Plot ROC_CURVE
+results|>
+  roc_curve(loan_status, .pred_0)|>
+  autoplot()
+```
+
+## Try a different algorithm
+
+Now let's try a different algorithm. Previously we used a logistic regression algorithm, which is a *linear* algorithm. There are many kinds of classification algorithm we could try, including:
+
+-   **Support Vector Machine algorithms**: Algorithms that define a *hyperplane* that separates classes.
+
+-   **Tree-based algorithms**: Algorithms that build a decision tree to reach a prediction
+
+-   **Ensemble algorithms**: Algorithms that combine the outputs of multiple base algorithms to improve generalizability.
+
+This time, we'll train the model using an *ensemble* algorithm named *Random Forest* that averages the outputs of multiple random decision trees. Random forests help to reduce tree correlation by injecting more randomness into the tree-growing process. More specifically, instead of considering all predictors in the data, for calculating a given split, random forests pick a random sample of predictors to be considered for that split.
+
+
+
+```{r rand_forest}
+# Preprocess the data for modelling
+loan_data_recipe <- recipe(loan_status ~ ., data = loan_data_train)|>
+  step_mutate(grade = factor(grade))|>
+  step_normalize(all_numeric_predictors())|>
+  step_dummy(all_nominal_predictors()) |> 
+  step_smote(loan_status)
+
+# Build a random forest model specification
+rf_spec <- rand_forest()|>
+  set_engine("ranger", importance = "impurity")|>
+  set_mode("classification")
+
+# Bundle recipe and model spec into a workflow
+rf_wf <- workflow()|>
+  add_recipe(loan_data_recipe)|>
+  add_model(rf_spec)
+
+# Fit a model
+rf_wf_fit <- rf_wf|>
+  fit(data = loan_data_train)
+
+# Make predictions on test data
+results <- loan_data_test|>
+  select(loan_status)|>
+  bind_cols(rf_wf_fit|>
+              predict(new_data = loan_data_test))|>
+  bind_cols(rf_wf_fit|>
+              predict(new_data = loan_data_test, type = "prob"))
+
+# Print out predictions
+results|>
+  slice_head(n = 10)
+
+```
+
+💪 There goes our random_forest model. Let's evaluate its metrics!
+
+```{r eval_rf}
+# Confusion metrics for rf_predictions
+results|>
+  conf_mat(loan_status, .pred_class)
+
+# Confusion matrix plot
+results|>
+  conf_mat(loan_status, .pred_class)|>
+  autoplot()
+
+```
+
+There is a considerable increase in the number of `True Positives` and `True Negatives`, which is a step in the right direction.
+
+Let's take a look at other evaluation metrics
+
+```{r other_met}
+# Evaluate other intuitive classification metrics
+rf_met <- results|>
+  eval_metrics(truth = loan_status, estimate = .pred_class)
+
+# Evaluate ROC_AOC
+auc <- results|>
+  roc_auc(loan_status, .pred_0)
+
+# Plot ROC_CURVE
+curve <- results|>
+  roc_curve(loan_status, .pred_0)|>
+  autoplot()
+
+# Return metrics
+list(rf_met, auc, curve)
+
+
+```
+
+let's make a Variable Importance Plot to see which predictor variables have the most impact in our model.
+
+```{r}
+# Load vip
+library(vip)
+
+# Extract the fitted model from the workflow
+rf_wf_fit|>
+  extract_fit_parsnip()|>
+# Make VIP plot
+  vip()
+```
+
+## Conclusion
+
+- notable it can be seen that `interest rate`, `employment length` and `age` are the most important variables in predecting loan default
+- this article served to show you some of the ways to visualise data as well as fitting logistic and a random forest model using tidymodels.
+- the logistic regression model performed considerably better than xgboost 
+
+# *References*
+
+-   Iannone R, Cheng J, Schloerke B, Hughes E, Seo J (2022). *gt: Easily
+    Create Presentation-Ready Display Tables*. R package version 0.8.0,
+    <https://CRAN.R-project.org/package=gt>.
+
+-   Kuhn et al., (2020). Tidymodels: a collection of packages for
+    modeling and machine learning using tidyverse principles.
+    <https://www.tidymodels.org>
+
+-   Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R,
+    Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller
+    E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V,
+    Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). "Welcome to
+    the tidyverse." *Journal of Open Source Software*, *4*(43), 1686.
+    <doi:10.21105/joss.01686>
+
+**Further reading**
+
+-   H. Wickham and G. Grolemund, [*R for Data Science: Visualize, Model,
+    Transform, Tidy, and Import Data*](https://r4ds.had.co.nz/).
+
+-   H. Wickham, [Advanced R](https://adv-r.hadley.nz/)
+
+
+
+
