@@ -1,0 +1,35 @@
+# Theme metadata
+name = "light-blue"
+
+# Light Theme ----
+# Is theme light or dark?
+light = true
+
+# Primary
+primary = "#78AACE"
+
+# Menu
+menu_primary = "#CEE5F2"
+menu_text = "#776472"
+menu_text_active = "#042A2B"
+menu_title = "#A31621"
+
+# Backgrounds
+background = "#CEE5F2"
+home_section_odd = "#ACCBE1"
+home_section_even = "#CEE5F2"
+
+# Links
+link = "#A31621"
+link_hover = "#21897E"
+
+# Color Palette
+# Color          HEX Code
+# -------------  --------
+# Columbia Blue  #f6e7d5
+# Iceberg        #e6cfb3
+# Celadon Green  #3d3429
+# Ruby Red       #231e1a
+# Persian Indigo #1b1613
+# Old Lavendar   #ebc400
+# Rich Black     #db6057

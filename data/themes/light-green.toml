@@ -1,0 +1,35 @@
+# Theme metadata
+name = "light-green"
+
+# Light Theme ----
+# Is theme light or dark?
+light = true
+
+# Primary
+primary = "#04724D"
+
+# Menu
+menu_primary = "#9DD9D2"
+menu_text = "#504136"
+menu_text_active = "#04724D"
+menu_title = "#53599A"
+
+# Backgrounds
+background = "#9DD9D2"
+home_section_odd = "#79BCB8"
+home_section_even = "#9DD9D2"
+
+# Links
+link = "#BC4B51"
+link_hover = "#D36135"
+
+# Color Palette
+# Color               HEX Code
+# ------------------- --------
+# Middle Blue Green   #f6e7d5
+# Green Sheen         #e6cfb3
+# Flame               #3d3429
+# Liberty             #231e1a
+# Dark Lava           #1b1613
+# Bittersweet Shimmer #ebc400
+# Dark Spring Green   #db6057

@@ -5,11 +5,10 @@
 
 # Appearance
 
-appearance:
-  theme_day: coffee
-  theme_night: minimal
-  font: apogee
-  font_size: L
+theme: 'primary'
+day_night: false
+font: 'custom_fonts'
+font_size: L
 
 # SEO
 
