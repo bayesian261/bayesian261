@@ -18,7 +18,7 @@ interests:
 - Survival Models
 - Machine learning
 - Experimental Design
-- Longitudinal models 
+- Longitudinal Data analysis 
 - Generalised linear and Additive models
 
      
