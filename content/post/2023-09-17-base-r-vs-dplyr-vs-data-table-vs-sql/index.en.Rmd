@@ -1,0 +1,333 @@
+---
+title: Base R vs dplyr vs data.table
+author: Bongani Ncube
+date: '2023-09-17'
+slug: base-r-vs-dplyr-vs-data-table
+categories:
+  - dplyr
+  - wrangling
+  - munging
+  - querying
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-09-17T14:20:50+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+
+## Introduction
+
+One of the many reasons why people do not like R is because you find more than one way of performing an operation. But i woul like to say this could be an advantage as every possible way can have more advantage for a given task . for instance:
+
++ one could find base R syntax very boring
++ one sees dplyr syntax more intuitive
++ data.table on the other hand is very fast in terms of performing operations
+
+> this blog compares the syntax for `base r` ,`tidyverse` and `data.table` for performing certain operations
+
+
+## library setup
+```{r}
+library(data.table)
+library(tidyverse)
+library(sqldf)
+
+```
+
+## Reading in data
+### Base R
++ base R uses the `read.csv()` function 
+```{r}
+df_base<-read.csv("loan_data_cleaned.csv")
+df_base |> head(n=12)
+```
+
+### tidyverse
++ `readr` package from the tidyverse contains the function `read_csv()`
+
+```{r}
+df_tidy<-read_csv("loan_data_cleaned.csv")
+df_tidy |> head(n=12)
+```
+```{r}
+df_table<-fread("loan_data_cleaned.csv")
+df_table |> head(n=12)
+```
+## data wrangling and processing
++ for reproducibilty we will sample only 30 rows for working with
+
+```{r}
+set.seed(23456)
+df_tidy <- df_tidy |> sample_n(size=30)
+df_base <- df_tidy |> as.data.frame()
+df_table<- df_tidy |> as.data.table()
+```
+
+### selecting columns
+#### Base R
++ base R use `df[row,column]` syntax to filter rows or columns
++ we can use indices or column names to do this
+
+```{r}
+## selecting the columns
+df_base[,c("loan_amnt","loan_status","grade")]
+```
+
+#### tidyverse
++ dplyr package contains the `select` statement that is used to call of the required variables
+
+```{r}
+## use select statement
+df_tidy |> select(loan_amnt,loan_status,grade)
+```
+
+#### data.table
+
+!["dt syntax"](data.table.png)
+
++ data.table uses Almost the same syntax as the `data.frame` is selecting columns
++ it uses the syntax `DT[i,j,k]`
++ for columns the two are typically the same 
+
+```{r}
+## selecting columns
+df_table[,c("loan_amnt","loan_status","grade")]
+```
++ however `data.table()` often uses the syntax `.()` for filtering and selecting
+
+```{r}
+df_table[,.(loan_amnt,loan_status,grade)]
+```
+
+
+### filtering rows
+#### Base R
++ typically you need to specify row range for this operation
++ `DF[range,]`
++ code below will only take rows 1,2,3,5 and 10
+
+```{r}
+df_base[c(1:3,5,10),]
+```
+#### Tidyverse
+
++ dplyr uses the `slice` or `filter` function to achieve the same as above
+
+```{r}
+df_tidy |> slice(1:3,5,10)
+```
+#### data.table way
+
+```{r}
+df_table[c(1:3,5,10),]
+```
+
+### filtering both rows and columns
+#### Base R
+```{r}
+df_base[c(1:3,5,10),c("loan_amnt","loan_status","grade")]
+```
++ perhaps you want to filter rows where grade is `A` and loan_status is `0` for the columns `grade,loan_status and loan_amnt`
+```{r}
+df_base[df_base$grade=="A"& df_base$loan_status==0,c("loan_amnt","loan_status","grade")]
+```
+
+#### tidyverse way
+
++ dplyr contains the `filter` function useful for filtering data
++ it can be used with the `slice` function to obtain results below
+
+```{r}
+df_tidy |> 
+  slice(1:3,5,10) |> 
+  select(loan_amnt,loan_status,grade)
+```
+
++ perhaps you wish to filter based on some particular condition
+
+```{r}
+df_tidy |> 
+  select(loan_status,loan_amnt,grade) |> 
+  filter(grade=="A"& loan_status==0)
+```
+
+#### data.table way
+
++ unlike in the data.frame , we dont have to index using a `$` operator
+
+```{r}
+df_table[grade=="A"& loan_status==0,.(loan_amnt,loan_status,grade)]
+```
+
+## data exploration
+
+#### helper filters
++ expressions for finding matches
++ lets use a different dataset for this
+
+```{r}
+set.seed(9898)
+df<-read_csv("recipe_site_traffic_2212.csv") |> 
+  sample_n(size=50)
+tidyv<-df
+baseR<-df |> as.data.frame()
+datatab<-df |> as.data.table()
+```
+#### base R
+
++ `grepl` function is useful for dealing with character expressions
++ the following expression will filter the rows that category matching the expression `hicken`
+
+```{r}
+baseR[grepl("hicken",baseR$category),c("recipe","category","calories")]
+```
+
+#### tidyverse
++ we can use `str_detect` or `str_like` from stringr and filter function
+
+```{r}
+tidyv |> 
+  filter(str_like(category,"Chicken%")) |> 
+  select(recipe,category,calories)
+```
+
+#### data.table
++ we can use the `%like%` function to detect matches in expressions
+
+```{r}
+datatab[category %like% "^Chicken",.(recipe,category,calories)]
+```
+
+## filtering ranges
++ say you want to take only rows where calories are in the range of `500 to 800`
+
+### base R
+```{r}
+baseR[baseR$calories>=500 & baseR$calories<=800,c("recipe","category","calories")]
+```
+
+
+
+### tidyverse
+```{r}
+tidyv |> 
+  filter(between(calories,500,800)) |> 
+  select(recipe,category,calories)
+```
+
+### data.table
+```{r}
+datatab[calories %between% c(500,800),.(recipe,category,calories)]
+```
+## summarizing data
+### Base R
+
+```{r}
+mean(baseR$calories,na.rm = T)
+```
+
+### Tidyverse
+
+```{r}
+tidyv |> 
+  summarise(average=mean(calories,na.rm = T))
+```
+
+### data.table
+
+```{r}
+datatab[,mean(calories,na.rm=T)]
+```
+## summarise on filters
+
++ say you want to summarize after filtering the data
++ the code below will find mean calories for rows that match chicken
+
+### base R
+
+```{r}
+mean(baseR[grepl("hicken",baseR$category),"calories"],na.rm = T)
+```
+### tidyverse
+
+```{r}
+tidyv |> 
+  filter(str_like(category,"Chicken%")) |> 
+  summarise(average=mean(calories,na.rm = T))
+```
+### data.table
+
+```{r}
+datatab[category %like% "^Chicken",mean(calories,na.rm=T)]
+```
+
+## Advanced computations
+### grouping and summarizing
+
++ sometimes you wish to perfom some rigorus calculations in either the three methods
+
+### Base R
++ Base R has a powerful function named `aggregate` that can be used for grouping summarising
+
+```{r}
+aggregate(calories~category,data=baseR,FUN=mean)
+```
+
+### tidyverse
+
+```{r}
+tidyv |> 
+  group_by(category) |> 
+  summarise(mean_cal=mean(calories,na.rm = T))
+```
+
+### data.table
+
+```{r}
+datatab[,.(mean_cal=mean(calories,na.rm=T)),by=.(category)]
+```
+
