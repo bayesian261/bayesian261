@@ -238,25 +238,10 @@ sections:
       city: Harare
       country: Zimbabwe
       country_code: ZW
-      postcode: "94305"
-      region: CA
       street: 7 Ginger Road Msasa Park
     appointment_url: https://calendly.com
     autolink: true
     contact_links:
-    - icon: twitter
-      icon_pack: fab
-      link: https://twitter.com/Twitter
-      name: DM Me
-    - icon: skype
-      icon_pack: fab
-      link: skype:echo123?call
-      name: Skype Me
-    - icon: video
-      icon_pack: fas
-      link: https://zoom.com
-      name: Zoom Me
-    directions: Enter Building 1 and take the stairs to Office 200 on Floor 2
     email: r195334vncube@gmail.com
     form:
       formspree:

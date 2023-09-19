@@ -1,0 +1,327 @@
+---
+title: "Creating Neat Tables in R"
+author: "Bongani Ncube"
+date: "2023-09-19"
+slug: "creating-neat-tables-in-r"
+categories:
+- datascience
+- dataviz
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: "2023-09-19T07:24:14+02:00"
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+## Introduction
+
+Tables are a great way to present and summarise data. Use when presenting descriptive statistics as well as model summaries. In this blog i present an introduction to using `gt` and `gtsummary` packages for effective data storytelling.
+
+## setup
+
+```{r}
+library(gtsummary)
+library(tidyverse)
+
+data<-read.csv("loan_data_cleaned.csv") %>% 
+  mutate(loan_status=as.factor(loan_status))
+
+tab<-data %>% 
+  select(loan_status,loan_amnt,age,home_ownership)
+```
+
+### output 1
+
++ explore the `tbl_summary()` function.
+
+```{r}
+tab %>% tbl_summary()
+```
+
+### summaries
+
+-   Four types of summaries: `continuous`, `continuous2`, `categorical`, and `dichotomous`
+
+-   Statistics are `median (IQR)` for continuous, `n (%)` for categorical/dichotomous
+
+-   Variables coded `0/1`, `TRUE/FALSE`, `Yes/No` treated as dichotomous
+
+-   Lists `NA` values under "Unknown"
+
+-   Label attributes are printed automatically
+
+
+### Customize tbl_summary() 
+
+```{r}
+tb<-tbl_summary(
+  tab,
+  by = loan_status,
+)
+```
+### output 2
+
+```{r}
+tb
+```
+
+### Notes
+
+-   `by`: specify a column variable for cross-tabulation
+
+-   `type`: specify the summary type
+-   `statistic`: customize the reported statistics
+
+### Customize tbl_summary() 
+
+```{r}
+
+tb2<-tbl_summary(
+  tab,
+  by = loan_status,
+  type = age ~ "continuous2",
+  statistic = 
+    list(
+      age ~ c("{mean} ({sd})", 
+              "{min}, {max}"), 
+      home_ownership ~ "{n} / {N} ({p}%)"
+    ),
+)
+```
+
+### output 3
+
+```{r}
+tb2
+```
+
+
+### renaming
+
+```{r}
+
+tb3<-tbl_summary(
+  tab,
+  by = loan_status,
+  type = age ~ "continuous2",
+  statistic = 
+    list(
+      age ~ c("{mean} ({sd})", 
+              "{min}, {max}"), 
+      home_ownership ~ "{n} / {N} ({p}%)"
+    ),
+  label = 
+    home_ownership ~ "living status",
+)
+```
+
+### output 4
+
+```{r}
+tb3
+```
+
+### few notes
+
+**Named list are OK too!** `label = list(age = "Patient Age")`
+
+### Add-on functions in {gtsummary}
+
+`tbl_summary()` objects can also be updated using related functions.
+
+-   `add_*()` add [additional column]{.emphasis} of statistics or information, e.g. p-values, q-values, overall statistics, treatment differences, N obs., and more
+
+-   `modify_*()` [modify]{.emphasis} table headers, spanning headers, footnotes, and more
+
+-   `bold_*()/italicize_*()` [style]{.emphasis} labels, variable levels, significant p-values
+
+### Update tbl_summary() with add\_\*()
+
+```{r}
+
+tb5<-tab |>
+  tbl_summary(
+    by = loan_status
+  ) |> 
+  add_p() |> 
+  add_q(method = "fdr")
+```
+
+### output
+
+```{r}
+tb5
+```
+
+### some notes
+
+-   `add_p()`: adds a column of p-values
+
+-   `add_q()`: adds a column of p-values adjusted for multiple comparisons through a call to `p.adjust()`
+
+### Update tbl_summary() with add\_\*()  
+
+```{r}
+mt<-tab |>
+  tbl_summary(
+    by = loan_status,
+    missing = "no"
+  ) |> 
+  add_overall()
+```
+
+### output
+
+```{r}
+mt
+```
+
+-   `add_overall()`: adds a column of overall statistics
+
+### Update tbl_summary() with add\_\*()  {auto-animate="true"}
+
+```{r}
+#| label: 'summary-with-overall2'
+#| output-location: "column"
+#| code-line-numbers: "7"
+tab |>
+  tbl_summary(
+    by = loan_status,
+    missing = "no"
+  ) |> 
+  add_overall() |> 
+  add_n()
+```
+
+
+
+### Update with bold\_\*()/italicize\_\*()
+
+```{r}
+mis<-tab |>
+  tbl_summary(
+    by = loan_status
+  ) |>
+  add_p() |> 
+  bold_labels() |> 
+  italicize_levels() |> 
+  bold_p(t = 0.8)
+```
+
+### output
+
+```{r}
+mis
+```
+
+### some notes
+
+-   `bold_labels()`: bold the variable labels
+-   `italicize_levels()`: italicize the variable levels
+-   `bold_p()`: bold p-values according a specified threshold
+
+## Update tbl_summary() with modify\_\*()
+
+```{r}
+tbl <-
+  tab |> 
+  tbl_summary(by = loan_status, 
+              missing = "no") |>
+  modify_header(
+      stat_1 ~ "**defaulted**",
+      stat_2 ~ "**not defaulted**"
+  ) |> 
+  modify_spanning_header(
+    all_stat_cols() ~ "**loan status**") |> 
+  modify_footnote(
+    all_stat_cols() ~ 
+      paste("median (IQR) for continuous;",
+            "n (%) for categorical")
+  )
+
+```
+
+### output
+```{r}
+tbl
+```
+
+## MODELING
+
+```{r}
+m1 <- 
+  glm(
+    loan_status ~ age + grade,
+    data = data,
+    family = binomial(link = "logit")
+  )
+```
+
+### default output
+```{r}
+summary(m1)
+```
+### Customize tbl_regression() output
+
+```{r}
+#| output-location: "column"
+tab<-tbl_regression(
+  m1,
+  exponentiate = TRUE
+) |> 
+  add_global_p() |>
+  add_glance_table(
+    include = c(nobs,
+                logLik,
+                AIC,
+                BIC)
+  )
+```
+
+### output
+
+```{r}
+tab
+```
