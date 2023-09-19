@@ -1,16 +1,16 @@
 ---
-title: Tidymodels in Healthcare
-author: BonganI Ncube
-date: '2023-09-17'
-slug: tidymodels-in-healthcare
+title: "Tidymodels in Healthcare"
+author: "BonganI Ncube"
+date: "2023-09-17"
+slug: "tidymodels-in-healthcare"
 categories:
-  - classification
-  - datascience
+- classification
+- datascience
 tags: []
 subtitle: ''
 summary: ''
 authors: []
-lastmod: '2023-09-17T22:30:07+02:00'
+lastmod: "2023-09-17T22:30:07+02:00"
 featured: no
 image:
   caption: ''
@@ -18,3 +18,388 @@ image:
   preview_only: no
 projects: []
 ---
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+### Load packages
+
+```{r setup, message=FALSE}
+# install.packages('ggridges')
+# install.packages('patchwork')
+# install.packages('gt')
+# install.packages('xgboost')
+# install.packages('ranger')
+# install.packages('vip')
+# install.packages('usemodels')
+# install.packages('GGally')
+# install.packages('doParallel')
+# install.packages('glmnet')
+library(skimr)
+library(tidyverse)
+library(tidymodels)
+library(scales)
+library(ggridges)
+library(patchwork)
+library(gt)
+library(xgboost)
+library(ranger)
+library(vip)
+library(usemodels)
+library(GGally)
+library(glmnet)
+doParallel::registerDoParallel()
+theme_set(theme_light())
+```
+
+### Load the Data
+
+```{r, message=FALSE}
+td_clean <- MLDataR::thyroid_disease
+```
+
+# Exploratory data analysis
+
+As a strong visual learner, it helps me to see the data in both table and plot formats. Let's get started by looking at a few the summary statistics generated from the `skimr::skim()` combined with `summary()`. I will also use `glimpse()` to get a concise view of the data names, data types and the first few entries.
+
+```{r}
+td_clean %>% 
+  skim() %>% 
+  select(-(numeric.p0:numeric.p100)) %>%
+  select(-(complete_rate)) %>% 
+  summary()
+
+td_clean %>% 
+  glimpse()
+```
+
+```{r caption ='Loan data from lendingclub.com'}
+td_clean %>% 
+  head() %>% 
+  gt() %>%
+  tab_header(title = md("**First 6 rows of loan data from lendingclub.com**"))  %>%
+  tab_options(container.height = 400,
+              container.overflow.y = TRUE,
+              heading.background.color = "#21908CFF",
+              table.width = "75%",
+              column_labels.background.color = "black",
+              table.font.color = "black") %>%
+  tab_style(style = list(cell_fill(color = "#35B779FF")),
+            locations = cells_body())
+```
+
+The loan data consists of one character variable ('purpose' = loan type) and 13 numeric variables. Let's use `geom_col()` to plot the number of times each loan type is represented in the data.
+
+```{r fig.cap = "Counts of each loan type", message=FALSE}
+td_clean %>% 
+  count(ThryroidClass) %>% 
+  mutate(ThryroidClass = fct_reorder(ThryroidClass, n)) %>% 
+  ggplot(aes(n, ThryroidClass, fill = ThryroidClass)) +
+  geom_col() +
+  labs(title = 'ThryroidClass by type',
+       x = 'Count',
+       y = '') +
+  theme(legend.position = 'none') +
+  tvthemes::scale_fill_avatar()
+
+```
+
+
+```{r clean_data}
+td_clean <- td_clean[complete.cases(td_clean),]
+dim(td_clean)
+```
+
+## Explanatory data analysis
+
+```{r distribution_function}
+# Get continuous variables only
+subset <- td_clean %>% 
+  dplyr::select(ThryroidClass, patient_age, TSH_reading, T3_reading,
+                T4_reading, thyrox_util_rate_T4U_reading,
+                FTI_reading)
+
+
+# Bring in external file for visualisations
+source('functions/visualisations.R')
+
+# Use plot function
+plot <- histoplotter(subset, ThryroidClass, 
+                     chart_x_axis_lbl = 'Thyroid Class', 
+                     chart_y_axis_lbl = 'Measures',boxplot_color = 'navy', 
+                     boxplot_fill = '#89CFF0', box_fill_transparency = 0.2) 
+
+# Add extras to plot
+plot + ggthemes::theme_solarized() + theme(legend.position = 'none') + 
+  scale_color_manual(values=c('negative' = 'red', 'positive' = 'blue'))
+
+
+```
+
+Numeric variables can be viewed as count distributions using `geom_histogram()`. Here, I use the `gather()` function to reshape the data into a long format and then `facet_wrap()` is used to display each histogram in a single figure.
+
+```{r fig.cap = "Histograms of all numeric variables", message=FALSE}
+td_clean %>% 
+ dplyr::select(patient_age, TSH_reading, T3_reading,
+                T4_reading, thyrox_util_rate_T4U_reading,
+                FTI_reading) |>  
+  gather() %>% 
+  ggplot(aes(value, fill = key)) +
+  geom_histogram(alpha = 0.7) +
+  facet_wrap(~key, scales = 'free') +
+  labs(title = 'Count distributions for numeric variables') +
+  theme(legend.position = 'none')+
+  tvthemes::scale_fill_avatar()
+```
+
+## Splitting the data
+
+The data is split into training and test sets using the default (prop = 0.75) split. 5-fold cross validation is used to create resamples from the training set.
+
+```{r divide_and_conquer}
+td_clean <- td_clean %>% 
+  dplyr::mutate(ThryroidClass = as.factor(ThryroidClass)) %>% 
+  dplyr::select(-ref_src) %>% 
+  drop_na()
+
+# Split the dataset 
+td_split <-initial_split(td_clean, 
+                                   strata = ThryroidClass, 
+                                   prop=0.9,
+                                   breaks = 4)
+
+train <- training(td_split)
+test <- testing(td_split)
+
+resamps <- vfold_cv(train, v = 5)
+```
+
+## Predicting loan type
+
+To predict the loan type we will need to build a multiclass classification model. I am going to try three different models and compare the results to determine which model has the best predictive power.
+
+### Model 1: XGboost
+
+```{r}
+#usemodels::use_xgboost(purpose ~ ., data = train)
+train_rcp <- recipes::recipe(ThryroidClass ~ ., data=train) %>% 
+  themis::step_smote(ThryroidClass, over_ratio = 0.97, neighbors = 3) %>%
+  step_zv(all_predictors()) 
+
+# Prep and bake the recipe so we can view this as a seperate data frame
+training_df <- train_rcp %>% 
+  prep() %>% 
+  juice()
+
+# Class imbalance resolved
+class_imbalance_after_smote <- unclass(prop.table(table(training_df$ThryroidClass)))[1:2]
+
+print(class_imbalance_after_smote)
+
+xgboost_spec <-
+  boost_tree(
+    trees = 1000,
+    tree_depth = tune(),
+    min_n = tune(),
+    mtry = tune(),
+    sample_size = tune(),
+    learn_rate = tune()
+  ) %>%
+  set_engine("xgboost") %>%
+  set_mode("classification")
+
+xgboost_workflow <-
+  workflow() %>%
+  add_recipe(train_rcp) %>%
+  add_model(xgboost_spec)
+
+# xgboost_grid_1 <- grid_regular(
+#   parameters(xgboost_spec),
+#   levels = 3 )
+
+# xgboost_grid_2 <- grid_regular(
+#   tree_depth(c(5L, 10L)),
+#     min_n(c(10L, 40L)),
+#     mtry(c(5L, 10L)),
+#     learn_rate(c(-2, -1)),
+#   sample_size=20
+# )
+
+set.seed(8390)
+xgboost_tune <-
+  tune_grid(xgboost_workflow, resamples = resamps, grid = 20)
+
+xgboost_tune %>%
+  autoplot()
+
+xg_best_params <- xgboost_tune %>%
+  select_best(metric = 'accuracy')
+
+xg_best_spec <- xgboost_spec %>%
+  finalize_model(xg_best_params)
+
+xg_final_fit <- workflow() %>%
+  add_recipe(train_rcp) %>%
+  add_model(xg_best_spec) %>%
+  last_fit(split = split)
+
+xg_final_fit %>%
+  collect_metrics()
+```
+
+### Model 2: Random forest
+
+```{r}
+# usemodels::use_ranger(purpose ~ ., data = train)
+
+ranger_recipe <-
+  recipe(formula = ThryroidClass ~ ., data=train)
+
+ranger_spec <-
+  rand_forest(mtry = tune(),
+              min_n = tune(),
+              trees = 1000) %>%
+  set_mode("classification") %>%
+  set_engine("ranger")
+
+rand_forest(mode = "classification") %>%
+  set_engine("ranger", importance = "impurity") %>%
+  fit(ThryroidClass ~ ., data=train) %>%
+  vip::vip(geom = 'point',
+           aesthetics = list(color = 'midnightblue', size = 4)) +
+  labs(title = 'test')
+
+ranger_workflow <-
+  workflow() %>%
+  add_recipe(train_rcp) %>%
+  add_model(ranger_spec)
+
+# ranger_grid <- grid_regular(
+#   parameters(ranger_spec),
+#   mtry(range = c(10, 30)),
+#   min_n(range = c(2, 8)),
+#   levels = 3)
+
+set.seed(57341)
+ranger_tune <-
+  tune_grid(ranger_workflow,
+            resamples = resamps,
+            grid = 20)
+
+ranger_tune %>%
+  autoplot()
+
+rf_best_params <- ranger_tune %>%
+  select_best(metric = 'accuracy')
+
+rf_best_spec <- ranger_spec %>%
+  finalize_model(rf_best_params)
+
+rf_final_fit <- workflow() %>%
+  add_recipe(train_rcp) %>%
+  add_model(rf_best_spec) %>%
+  last_fit(split = split)
+
+rf_final_fit %>%
+  collect_metrics()
+```
+
+### Model 3: K-nearest neighbors
+
+```{r}
+#usemodels::use_kknn(purpose ~ ., data = train)
+
+
+kknn_spec <-
+  nearest_neighbor(neighbors = tune(), weight_func = tune()) %>%
+  set_mode("classification") %>%
+  set_engine("kknn")
+
+kknn_workflow <-
+  workflow() %>%
+  add_recipe(train_rcp) %>%
+  add_model(kknn_spec)
+
+knn_grid <- grid_regular(
+  parameters(kknn_spec),
+  mtry(range = c(10, 30)),
+  levels = 5)
+
+set.seed(78590)
+kknn_tune <-
+  tune_grid(kknn_workflow,
+            resamples = resamps,
+            grid = knn_grid)
+
+kknn_tune %>%
+  autoplot()
+
+knn_best_params <- kknn_tune %>%
+  select_best(metric = 'accuracy')
+
+knn_best_spec <- kknn_spec %>%
+  finalize_model(knn_best_params)
+
+knn_final_fit <- workflow() %>%
+  add_recipe(kknn_recipe) %>%
+  add_model(knn_best_spec) %>%
+  last_fit(split = split)
+
+knn_final_fit %>%
+  collect_metrics()
+
+knn_final_fit %>%
+  collect_predictions()
+```
+
+```{r}
+models <- c('xgboost', 'xgboost', 'random forrest', 'random forrest', 'knn', 'knn')
+bind_rows(xg_final_fit %>% collect_metrics(), rf_final_fit %>% collect_metrics(), knn_final_fit %>%
+  collect_metrics()) %>% 
+  mutate(models = models) %>%
+  select(models, everything(), -.config) %>% 
+  gt() %>%
+  tab_header(title = 'Model Results')  %>%
+  tab_options(container.height = 400,
+              container.overflow.y = TRUE,
+              heading.background.color = "#21908CFF",
+              table.width = "75%",
+              column_labels.background.color = "black",
+              table.font.color = "black") %>%
+  tab_style(style = list(cell_fill(color = "#35B779FF")),
+            locations = cells_body())
+```
+
