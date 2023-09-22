@@ -44,7 +44,7 @@ A data frame with 88 observations and 8 variables:
 - ki : Karnofsky index.
 - gtv : Gross tumor volume, in cubic centimeters.
 - stereo : Stereotactic method factor with levels “SRS” and “SRT”.
-- status : Whether the patient is still alive at the end of the study: 0=Yes, 1=No.
+- status : Whether the patient is dead at the end of the study: 0=No, 1=yes.
 - time : Survival time, in months.
 
 # Setup
@@ -82,7 +82,7 @@ skimr::skim(BrainCancer)
 | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |             |
 | Group variables                                  | None        |
 
-Table 1: Data summary
+<span id="tab:unnamed-chunk-2"></span>Table 1: Data summary
 
 **Variable type: factor**
 
@@ -104,51 +104,57 @@ Table 1: Data summary
 
 # Explanatory data Analysis(EDA)
 
-## survival Rate
+## mortality Rate
 
 ``` r
 data<-BrainCancer |> 
-  mutate(status=ifelse(status==1,0,1))
+  mutate(brain_status=ifelse(status==1,"yes","no"))
+
+
 data|>
-  dplyr::mutate(status = ifelse(status==0,"yes","no"))|> 
-  dplyr::group_by(status)|> 
+  dplyr::group_by(brain_status)|> 
   dplyr::summarize(count=n(),
              mean=mean(gtv, na.rm = T),
              std_dev=sd(gtv, na.rm = T),
              median=median(gtv, na.rm = T), 
              min=min(gtv, na.rm = T),
              max=max(gtv, na.rm = T))|> 
- tibble::column_to_rownames(var = "status") |> 
+ tibble::column_to_rownames(var = "brain_status") |> 
  base::as.matrix()
 #>     count      mean  std_dev median  min   max
 #> no     53  7.022075 7.753337   4.72 0.01 31.74
 #> yes    35 11.142286 9.451387  11.38 0.14 34.64
 
 #Calculate mortality rate
-print(paste('survival rate (%) is ',round(35/(35+53)*100,digits=2)))
-#> [1] "survival rate (%) is  39.77"
+print(paste('Mortality rate (%) is ',round(35/(35+53)*100,digits=2)))
+#> [1] "Mortality rate (%) is  39.77"
 ```
 
-- the survival rate is approximately `40%`
+``` r
+blogdown::shortcode("spoiler",text="click here",.content="the Mortality rate is approximately `40%`")
+```
+
+{{% spoiler text="click here" %}}
+the Mortality rate is approximately `40%`
+{{% /spoiler %}}
 
 ``` r
 library(extrafont)
 loadfonts(quiet=TRUE)
 
 iv_rates <- data |>
-  dplyr::mutate(status = ifelse(status==1,"yes","no")) |> 
-  group_by(status) |>
+  group_by(brain_status) |>
   summarize(count = n()) |> 
   mutate(prop = count/sum(count)) |>
   ungroup() 
 
 plot<-iv_rates |>
-  ggplot(aes(x=status, y=prop, fill=status)) + 
+  ggplot(aes(x=brain_status, y=prop, fill=brain_status)) + 
   geom_col(color="black",width = 0.5)+ 
   theme(legend.position="bottom") + 
   geom_label(aes(label=scales::percent(prop)), color="white") + 
   labs(
-    title = "survival ratio",
+    title = "mortality ratio",
     subtitle = "Brain Cancer Analysis",
     y = "proportion(%)", 
     x = "",
@@ -163,11 +169,84 @@ geom_hline(yintercept = (sum(data$status)/nrow(data)), col = "white", lty = 2) +
 plot
 ```
 
-<img src="staticunnamed-chunk-4-1.png" width="1023.999552" style="display: block; margin: auto;" />
-
-## survival rate by sex
-
 <img src="staticunnamed-chunk-5-1.png" width="1023.999552" style="display: block; margin: auto;" />
+
+## mortality rate by sex
+
+### Create a customised function for summarising categorical data per status
+
+``` r
+summarize_status <- function(tbl){
+  tbl %>% 
+  #group_by(occup) %>% 
+  summarise(n_died = sum(brain_status == "yes"), n_total = n()) %>%
+  ungroup() %>% 
+  mutate(pct_died = n_died / n_total) %>% 
+  arrange(desc(pct_died)) %>% 
+  mutate(low = qbeta(0.025, n_died + 5, n_total - n_died + .5),
+         high = qbeta(0.975, n_died + 5, n_total - n_died + .5),
+         pct = n_total / sum(n_total),
+         percentage=scales::percent(pct_died))
+  } 
+```
+
+### mortality rate summary per sex
+
+``` r
+data |> 
+  group_by(sex) |> 
+  summarize_status()
+#> # A tibble: 2 x 8
+#>   sex    n_died n_total pct_died   low  high   pct percentage
+#>   <fct>   <int>   <int>    <dbl> <dbl> <dbl> <dbl> <chr>     
+#> 1 Male       20      43    0.465 0.376 0.653 0.489 47%       
+#> 2 Female     15      45    0.333 0.267 0.533 0.511 33%
+```
+
+- from the dataset , `\(\frac{20}{43}\)` men died while the other 15 where woman who died
+- we can present these more visually with the graphs below
+
+<img src="staticunnamed-chunk-8-1.png" width="1023.999552" style="display: block; margin: auto;" />
+
+``` r
+library(glue)
+bind_count = function(x){
+  as_tibble(x) %>% 
+  add_count(value) %>% 
+  mutate(value = glue("{value} ({n})")) %>%
+    pull(value)
+  
+}
+```
+
+``` r
+# Scatter plot
+data %>% 
+  na.omit() %>% 
+  group_by(diagnosis = bind_count(diagnosis)) %>% 
+  summarize_status() %>% 
+  mutate(diagnosis = fct_reorder(diagnosis, pct_died)) %>% 
+  ggplot(mapping = aes(x = pct_died, y = diagnosis)) +
+  geom_point(aes(size = pct), show.legend = T) +
+  geom_errorbarh(aes(xmin = low, xmax = high), height = .3) +
+  labs(
+    x = "Percentage of patients in each category who died",
+    title = "Distribution of status by diagnosis",
+    size = "%prevalence",
+    subtitle = ""
+  ) +
+  scale_x_continuous(labels = percent) +
+  scale_size_continuous(labels = percent) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+<img src="staticunnamed-chunk-10-1.png" width="1023.999552" style="display: block; margin: auto;" />
+
+{{% callout note %}}
+
+It seems that cumulatively, people with **LG glioma** and **HG glioma** had high chances of death.
+
+{{% /callout %}}
 
 ## distribution of numeric variables
 
@@ -183,7 +262,7 @@ data %>%
   ggthemes::theme_wsj()
 ```
 
-<img src="staticunnamed-chunk-6-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-11-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
 - status is really not supposed to be numeric but rather a factor variable
 - time and gross tumor volume are all positively skewed
@@ -227,7 +306,7 @@ plot +
   theme(legend.position = 'top') 
 ```
 
-<img src="staticunnamed-chunk-8-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-13-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
 ## categorical data
 
@@ -263,7 +342,7 @@ plot<-iv_rates |>
 plot
 ```
 
-<img src="staticunnamed-chunk-9-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-14-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
 ``` r
 library(gtsummary)
@@ -288,14 +367,26 @@ data |>
   as_gt()
 ```
 
-<div id="uircrxzjpb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>html {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+<div id="otofmlnfmj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#otofmlnfmj table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#uircrxzjpb .gt_table {
+#otofmlnfmj thead, #otofmlnfmj tbody, #otofmlnfmj tfoot, #otofmlnfmj tr, #otofmlnfmj td, #otofmlnfmj th {
+  border-style: none;
+}
+
+#otofmlnfmj p {
+  margin: 0;
+  padding: 0;
+}
+
+#otofmlnfmj .gt_table {
   display: table;
   border-collapse: collapse;
+  line-height: normal;
   margin-left: auto;
   margin-right: auto;
   color: #333333;
@@ -318,24 +409,12 @@ data |>
   border-left-color: #D3D3D3;
 }
 
-#uircrxzjpb .gt_heading {
-  background-color: #FFFFFF;
-  text-align: center;
-  border-bottom-color: #FFFFFF;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-}
-
-#uircrxzjpb .gt_caption {
+#otofmlnfmj .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#uircrxzjpb .gt_title {
+#otofmlnfmj .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -347,25 +426,37 @@ data |>
   border-bottom-width: 0;
 }
 
-#uircrxzjpb .gt_subtitle {
+#otofmlnfmj .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
-  padding-top: 0;
-  padding-bottom: 6px;
+  padding-top: 3px;
+  padding-bottom: 5px;
   padding-left: 5px;
   padding-right: 5px;
   border-top-color: #FFFFFF;
   border-top-width: 0;
 }
 
-#uircrxzjpb .gt_bottom_border {
+#otofmlnfmj .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#otofmlnfmj .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#uircrxzjpb .gt_col_headings {
+#otofmlnfmj .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -380,7 +471,7 @@ data |>
   border-right-color: #D3D3D3;
 }
 
-#uircrxzjpb .gt_col_heading {
+#otofmlnfmj .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -400,7 +491,7 @@ data |>
   overflow-x: hidden;
 }
 
-#uircrxzjpb .gt_column_spanner_outer {
+#otofmlnfmj .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -412,15 +503,15 @@ data |>
   padding-right: 4px;
 }
 
-#uircrxzjpb .gt_column_spanner_outer:first-child {
+#otofmlnfmj .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#uircrxzjpb .gt_column_spanner_outer:last-child {
+#otofmlnfmj .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#uircrxzjpb .gt_column_spanner {
+#otofmlnfmj .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -432,7 +523,11 @@ data |>
   width: 100%;
 }
 
-#uircrxzjpb .gt_group_heading {
+#otofmlnfmj .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#otofmlnfmj .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -458,7 +553,7 @@ data |>
   text-align: left;
 }
 
-#uircrxzjpb .gt_empty_group_heading {
+#otofmlnfmj .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -473,15 +568,15 @@ data |>
   vertical-align: middle;
 }
 
-#uircrxzjpb .gt_from_md > :first-child {
+#otofmlnfmj .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#uircrxzjpb .gt_from_md > :last-child {
+#otofmlnfmj .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#uircrxzjpb .gt_row {
+#otofmlnfmj .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -500,7 +595,7 @@ data |>
   overflow-x: hidden;
 }
 
-#uircrxzjpb .gt_stub {
+#otofmlnfmj .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -513,7 +608,7 @@ data |>
   padding-right: 5px;
 }
 
-#uircrxzjpb .gt_stub_row_group {
+#otofmlnfmj .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -527,11 +622,15 @@ data |>
   vertical-align: top;
 }
 
-#uircrxzjpb .gt_row_group_first td {
+#otofmlnfmj .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#uircrxzjpb .gt_summary_row {
+#otofmlnfmj .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#otofmlnfmj .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -541,16 +640,16 @@ data |>
   padding-right: 5px;
 }
 
-#uircrxzjpb .gt_first_summary_row {
+#otofmlnfmj .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#uircrxzjpb .gt_first_summary_row.thick {
+#otofmlnfmj .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#uircrxzjpb .gt_last_summary_row {
+#otofmlnfmj .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -560,7 +659,7 @@ data |>
   border-bottom-color: #D3D3D3;
 }
 
-#uircrxzjpb .gt_grand_summary_row {
+#otofmlnfmj .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -570,7 +669,7 @@ data |>
   padding-right: 5px;
 }
 
-#uircrxzjpb .gt_first_grand_summary_row {
+#otofmlnfmj .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -580,11 +679,21 @@ data |>
   border-top-color: #D3D3D3;
 }
 
-#uircrxzjpb .gt_striped {
+#otofmlnfmj .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#otofmlnfmj .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#uircrxzjpb .gt_table_body {
+#otofmlnfmj .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -593,7 +702,7 @@ data |>
   border-bottom-color: #D3D3D3;
 }
 
-#uircrxzjpb .gt_footnotes {
+#otofmlnfmj .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -607,30 +716,8 @@ data |>
   border-right-color: #D3D3D3;
 }
 
-#uircrxzjpb .gt_footnote {
+#otofmlnfmj .gt_footnote {
   margin: 0px;
-  font-size: 90%;
-  padding-left: 4px;
-  padding-right: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#uircrxzjpb .gt_sourcenotes {
-  color: #333333;
-  background-color: #FFFFFF;
-  border-bottom-style: none;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-}
-
-#uircrxzjpb .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -638,82 +725,103 @@ data |>
   padding-right: 5px;
 }
 
-#uircrxzjpb .gt_left {
+#otofmlnfmj .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#otofmlnfmj .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#otofmlnfmj .gt_left {
   text-align: left;
 }
 
-#uircrxzjpb .gt_center {
+#otofmlnfmj .gt_center {
   text-align: center;
 }
 
-#uircrxzjpb .gt_right {
+#otofmlnfmj .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#uircrxzjpb .gt_font_normal {
+#otofmlnfmj .gt_font_normal {
   font-weight: normal;
 }
 
-#uircrxzjpb .gt_font_bold {
+#otofmlnfmj .gt_font_bold {
   font-weight: bold;
 }
 
-#uircrxzjpb .gt_font_italic {
+#otofmlnfmj .gt_font_italic {
   font-style: italic;
 }
 
-#uircrxzjpb .gt_super {
+#otofmlnfmj .gt_super {
   font-size: 65%;
 }
 
-#uircrxzjpb .gt_footnote_marks {
-  font-style: italic;
-  font-weight: normal;
+#otofmlnfmj .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
+  position: initial;
 }
 
-#uircrxzjpb .gt_asterisk {
+#otofmlnfmj .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#uircrxzjpb .gt_indent_1 {
+#otofmlnfmj .gt_indent_1 {
   text-indent: 5px;
 }
 
-#uircrxzjpb .gt_indent_2 {
+#otofmlnfmj .gt_indent_2 {
   text-indent: 10px;
 }
 
-#uircrxzjpb .gt_indent_3 {
+#otofmlnfmj .gt_indent_3 {
   text-indent: 15px;
 }
 
-#uircrxzjpb .gt_indent_4 {
+#otofmlnfmj .gt_indent_4 {
   text-indent: 20px;
 }
 
-#uircrxzjpb .gt_indent_5 {
+#otofmlnfmj .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
-<table class="gt_table">
-  <caption>(#tab:unnamed-chunk-10)<strong>Table 1. Patient Characteristic</strong></caption>
-  
-  <thead class="gt_col_headings">
-    <tr>
+<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+  <caption>(#tab:unnamed-chunk-15)<strong>Table 1. Patient Characteristic</strong></caption>
+  <thead>
+    
+    <tr class="gt_col_headings gt_spanner_row">
       <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;Variable&lt;/strong&gt;"><strong>Variable</strong></th>
       <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="2" scope="colgroup" id="&lt;strong&gt;Survival Status&lt;/strong&gt;">
         <span class="gt_column_spanner"><strong>Survival Status</strong></span>
       </th>
       <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;Test Statistic&lt;/strong&gt;"><strong>Test Statistic</strong></th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;p-value&lt;/strong&gt;&lt;sup class=&quot;gt_footnote_marks&quot;&gt;2&lt;/sup&gt;"><strong>p-value</strong><sup class="gt_footnote_marks">2</sup></th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;p-value&lt;/strong&gt;&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;2&lt;/sup&gt;&lt;/span&gt;"><strong>p-value</strong><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>2</sup></span></th>
     </tr>
-    <tr>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;0&lt;/strong&gt;, N = 35&lt;sup class=&quot;gt_footnote_marks&quot;&gt;1&lt;/sup&gt;"><strong>0</strong>, N = 35<sup class="gt_footnote_marks">1</sup></th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;1&lt;/strong&gt;, N = 53&lt;sup class=&quot;gt_footnote_marks&quot;&gt;1&lt;/sup&gt;"><strong>1</strong>, N = 53<sup class="gt_footnote_marks">1</sup></th>
+    <tr class="gt_col_headings">
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;0&lt;/strong&gt;, N = 53&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;1&lt;/sup&gt;&lt;/span&gt;"><strong>0</strong>, N = 53<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span></th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;1&lt;/strong&gt;, N = 35&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;1&lt;/sup&gt;&lt;/span&gt;"><strong>1</strong>, N = 35<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span></th>
     </tr>
   </thead>
   <tbody class="gt_table_body">
@@ -723,13 +831,13 @@ data |>
 <td headers="statistic" class="gt_row gt_center">1.6</td>
 <td headers="p.value" class="gt_row gt_center">0.21</td></tr>
     <tr><td headers="label" class="gt_row gt_left">    Female</td>
-<td headers="stat_1" class="gt_row gt_center">15 / 35 (43%)</td>
-<td headers="stat_2" class="gt_row gt_center">30 / 53 (57%)</td>
+<td headers="stat_1" class="gt_row gt_center">30 / 53 (57%)</td>
+<td headers="stat_2" class="gt_row gt_center">15 / 35 (43%)</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
     <tr><td headers="label" class="gt_row gt_left">    Male</td>
-<td headers="stat_1" class="gt_row gt_center">20 / 35 (57%)</td>
-<td headers="stat_2" class="gt_row gt_center">23 / 53 (43%)</td>
+<td headers="stat_1" class="gt_row gt_center">23 / 53 (43%)</td>
+<td headers="stat_2" class="gt_row gt_center">20 / 35 (57%)</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
     <tr><td headers="label" class="gt_row gt_left" style="font-weight: bold;">diagnosis</td>
@@ -738,28 +846,28 @@ data |>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"><0.001</td></tr>
     <tr><td headers="label" class="gt_row gt_left">    Meningioma</td>
-<td headers="stat_1" class="gt_row gt_center">9 / 35 (26%)</td>
-<td headers="stat_2" class="gt_row gt_center">33 / 52 (63%)</td>
+<td headers="stat_1" class="gt_row gt_center">33 / 52 (63%)</td>
+<td headers="stat_2" class="gt_row gt_center">9 / 35 (26%)</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
     <tr><td headers="label" class="gt_row gt_left">    LG glioma</td>
-<td headers="stat_1" class="gt_row gt_center">4 / 35 (11%)</td>
-<td headers="stat_2" class="gt_row gt_center">5 / 52 (9.6%)</td>
+<td headers="stat_1" class="gt_row gt_center">5 / 52 (9.6%)</td>
+<td headers="stat_2" class="gt_row gt_center">4 / 35 (11%)</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
     <tr><td headers="label" class="gt_row gt_left">    HG glioma</td>
-<td headers="stat_1" class="gt_row gt_center">17 / 35 (49%)</td>
-<td headers="stat_2" class="gt_row gt_center">5 / 52 (9.6%)</td>
+<td headers="stat_1" class="gt_row gt_center">5 / 52 (9.6%)</td>
+<td headers="stat_2" class="gt_row gt_center">17 / 35 (49%)</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
     <tr><td headers="label" class="gt_row gt_left">    Other</td>
-<td headers="stat_1" class="gt_row gt_center">5 / 35 (14%)</td>
-<td headers="stat_2" class="gt_row gt_center">9 / 52 (17%)</td>
+<td headers="stat_1" class="gt_row gt_center">9 / 52 (17%)</td>
+<td headers="stat_2" class="gt_row gt_center">5 / 35 (14%)</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
     <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
-<td headers="stat_1" class="gt_row gt_center">0</td>
-<td headers="stat_2" class="gt_row gt_center">1</td>
+<td headers="stat_1" class="gt_row gt_center">1</td>
+<td headers="stat_2" class="gt_row gt_center">0</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
     <tr><td headers="label" class="gt_row gt_left" style="font-weight: bold;">loc</td>
@@ -768,13 +876,13 @@ data |>
 <td headers="statistic" class="gt_row gt_center">3.5</td>
 <td headers="p.value" class="gt_row gt_center">0.060</td></tr>
     <tr><td headers="label" class="gt_row gt_left">    Infratentorial</td>
-<td headers="stat_1" class="gt_row gt_center">4 / 35 (11%)</td>
-<td headers="stat_2" class="gt_row gt_center">15 / 53 (28%)</td>
+<td headers="stat_1" class="gt_row gt_center">15 / 53 (28%)</td>
+<td headers="stat_2" class="gt_row gt_center">4 / 35 (11%)</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
     <tr><td headers="label" class="gt_row gt_left">    Supratentorial</td>
-<td headers="stat_1" class="gt_row gt_center">31 / 35 (89%)</td>
-<td headers="stat_2" class="gt_row gt_center">38 / 53 (72%)</td>
+<td headers="stat_1" class="gt_row gt_center">38 / 53 (72%)</td>
+<td headers="stat_2" class="gt_row gt_center">31 / 35 (89%)</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
     <tr><td headers="label" class="gt_row gt_left" style="font-weight: bold;">stereo</td>
@@ -783,23 +891,23 @@ data |>
 <td headers="statistic" class="gt_row gt_center">4.2</td>
 <td headers="p.value" class="gt_row gt_center">0.040</td></tr>
     <tr><td headers="label" class="gt_row gt_left">    SRS</td>
-<td headers="stat_1" class="gt_row gt_center">5 / 35 (14%)</td>
-<td headers="stat_2" class="gt_row gt_center">18 / 53 (34%)</td>
+<td headers="stat_1" class="gt_row gt_center">18 / 53 (34%)</td>
+<td headers="stat_2" class="gt_row gt_center">5 / 35 (14%)</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
     <tr><td headers="label" class="gt_row gt_left">    SRT</td>
-<td headers="stat_1" class="gt_row gt_center">30 / 35 (86%)</td>
-<td headers="stat_2" class="gt_row gt_center">35 / 53 (66%)</td>
+<td headers="stat_1" class="gt_row gt_center">35 / 53 (66%)</td>
+<td headers="stat_2" class="gt_row gt_center">30 / 35 (86%)</td>
 <td headers="statistic" class="gt_row gt_center"></td>
 <td headers="p.value" class="gt_row gt_center"></td></tr>
   </tbody>
   
   <tfoot class="gt_footnotes">
     <tr>
-      <td class="gt_footnote" colspan="5"><sup class="gt_footnote_marks">1</sup> Mean (SD) or Frequency (%)</td>
+      <td class="gt_footnote" colspan="5"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span> Mean (SD) or Frequency (%)</td>
     </tr>
     <tr>
-      <td class="gt_footnote" colspan="5"><sup class="gt_footnote_marks">2</sup> Pearson's Chi-squared test; Fisher's exact test</td>
+      <td class="gt_footnote" colspan="5"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>2</sup></span> Pearson’s Chi-squared test; Fisher’s exact test</td>
     </tr>
   </tfoot>
 </table>
@@ -830,14 +938,26 @@ data |>
   as_gt()
 ```
 
-<div id="oulnmispds" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>html {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+<div id="aupwirtwtf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#aupwirtwtf table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#oulnmispds .gt_table {
+#aupwirtwtf thead, #aupwirtwtf tbody, #aupwirtwtf tfoot, #aupwirtwtf tr, #aupwirtwtf td, #aupwirtwtf th {
+  border-style: none;
+}
+
+#aupwirtwtf p {
+  margin: 0;
+  padding: 0;
+}
+
+#aupwirtwtf .gt_table {
   display: table;
   border-collapse: collapse;
+  line-height: normal;
   margin-left: auto;
   margin-right: auto;
   color: #333333;
@@ -860,24 +980,12 @@ data |>
   border-left-color: #D3D3D3;
 }
 
-#oulnmispds .gt_heading {
-  background-color: #FFFFFF;
-  text-align: center;
-  border-bottom-color: #FFFFFF;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-}
-
-#oulnmispds .gt_caption {
+#aupwirtwtf .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#oulnmispds .gt_title {
+#aupwirtwtf .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -889,25 +997,37 @@ data |>
   border-bottom-width: 0;
 }
 
-#oulnmispds .gt_subtitle {
+#aupwirtwtf .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
-  padding-top: 0;
-  padding-bottom: 6px;
+  padding-top: 3px;
+  padding-bottom: 5px;
   padding-left: 5px;
   padding-right: 5px;
   border-top-color: #FFFFFF;
   border-top-width: 0;
 }
 
-#oulnmispds .gt_bottom_border {
+#aupwirtwtf .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#aupwirtwtf .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#oulnmispds .gt_col_headings {
+#aupwirtwtf .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -922,7 +1042,7 @@ data |>
   border-right-color: #D3D3D3;
 }
 
-#oulnmispds .gt_col_heading {
+#aupwirtwtf .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -942,7 +1062,7 @@ data |>
   overflow-x: hidden;
 }
 
-#oulnmispds .gt_column_spanner_outer {
+#aupwirtwtf .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -954,15 +1074,15 @@ data |>
   padding-right: 4px;
 }
 
-#oulnmispds .gt_column_spanner_outer:first-child {
+#aupwirtwtf .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#oulnmispds .gt_column_spanner_outer:last-child {
+#aupwirtwtf .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#oulnmispds .gt_column_spanner {
+#aupwirtwtf .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -974,7 +1094,11 @@ data |>
   width: 100%;
 }
 
-#oulnmispds .gt_group_heading {
+#aupwirtwtf .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#aupwirtwtf .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1000,7 +1124,7 @@ data |>
   text-align: left;
 }
 
-#oulnmispds .gt_empty_group_heading {
+#aupwirtwtf .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1015,15 +1139,15 @@ data |>
   vertical-align: middle;
 }
 
-#oulnmispds .gt_from_md > :first-child {
+#aupwirtwtf .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#oulnmispds .gt_from_md > :last-child {
+#aupwirtwtf .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#oulnmispds .gt_row {
+#aupwirtwtf .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1042,7 +1166,7 @@ data |>
   overflow-x: hidden;
 }
 
-#oulnmispds .gt_stub {
+#aupwirtwtf .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1055,7 +1179,7 @@ data |>
   padding-right: 5px;
 }
 
-#oulnmispds .gt_stub_row_group {
+#aupwirtwtf .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1069,11 +1193,15 @@ data |>
   vertical-align: top;
 }
 
-#oulnmispds .gt_row_group_first td {
+#aupwirtwtf .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#oulnmispds .gt_summary_row {
+#aupwirtwtf .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#aupwirtwtf .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1083,16 +1211,16 @@ data |>
   padding-right: 5px;
 }
 
-#oulnmispds .gt_first_summary_row {
+#aupwirtwtf .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#oulnmispds .gt_first_summary_row.thick {
+#aupwirtwtf .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#oulnmispds .gt_last_summary_row {
+#aupwirtwtf .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1102,7 +1230,7 @@ data |>
   border-bottom-color: #D3D3D3;
 }
 
-#oulnmispds .gt_grand_summary_row {
+#aupwirtwtf .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1112,7 +1240,7 @@ data |>
   padding-right: 5px;
 }
 
-#oulnmispds .gt_first_grand_summary_row {
+#aupwirtwtf .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1122,11 +1250,21 @@ data |>
   border-top-color: #D3D3D3;
 }
 
-#oulnmispds .gt_striped {
+#aupwirtwtf .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#aupwirtwtf .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#oulnmispds .gt_table_body {
+#aupwirtwtf .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1135,7 +1273,7 @@ data |>
   border-bottom-color: #D3D3D3;
 }
 
-#oulnmispds .gt_footnotes {
+#aupwirtwtf .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1149,30 +1287,8 @@ data |>
   border-right-color: #D3D3D3;
 }
 
-#oulnmispds .gt_footnote {
+#aupwirtwtf .gt_footnote {
   margin: 0px;
-  font-size: 90%;
-  padding-left: 4px;
-  padding-right: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#oulnmispds .gt_sourcenotes {
-  color: #333333;
-  background-color: #FFFFFF;
-  border-bottom-style: none;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-}
-
-#oulnmispds .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1180,82 +1296,103 @@ data |>
   padding-right: 5px;
 }
 
-#oulnmispds .gt_left {
+#aupwirtwtf .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#aupwirtwtf .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#aupwirtwtf .gt_left {
   text-align: left;
 }
 
-#oulnmispds .gt_center {
+#aupwirtwtf .gt_center {
   text-align: center;
 }
 
-#oulnmispds .gt_right {
+#aupwirtwtf .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#oulnmispds .gt_font_normal {
+#aupwirtwtf .gt_font_normal {
   font-weight: normal;
 }
 
-#oulnmispds .gt_font_bold {
+#aupwirtwtf .gt_font_bold {
   font-weight: bold;
 }
 
-#oulnmispds .gt_font_italic {
+#aupwirtwtf .gt_font_italic {
   font-style: italic;
 }
 
-#oulnmispds .gt_super {
+#aupwirtwtf .gt_super {
   font-size: 65%;
 }
 
-#oulnmispds .gt_footnote_marks {
-  font-style: italic;
-  font-weight: normal;
+#aupwirtwtf .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
+  position: initial;
 }
 
-#oulnmispds .gt_asterisk {
+#aupwirtwtf .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#oulnmispds .gt_indent_1 {
+#aupwirtwtf .gt_indent_1 {
   text-indent: 5px;
 }
 
-#oulnmispds .gt_indent_2 {
+#aupwirtwtf .gt_indent_2 {
   text-indent: 10px;
 }
 
-#oulnmispds .gt_indent_3 {
+#aupwirtwtf .gt_indent_3 {
   text-indent: 15px;
 }
 
-#oulnmispds .gt_indent_4 {
+#aupwirtwtf .gt_indent_4 {
   text-indent: 20px;
 }
 
-#oulnmispds .gt_indent_5 {
+#aupwirtwtf .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
-<table class="gt_table">
-  <caption>(#tab:unnamed-chunk-11)<strong>Table 1. Patient Characteristic</strong></caption>
-  
-  <thead class="gt_col_headings">
-    <tr>
+<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+  <caption>(#tab:unnamed-chunk-16)<strong>Table 1. Patient Characteristic</strong></caption>
+  <thead>
+    
+    <tr class="gt_col_headings gt_spanner_row">
       <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;Variable&lt;/strong&gt;"><strong>Variable</strong></th>
       <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="2" scope="colgroup" id="&lt;strong&gt;Survival Status&lt;/strong&gt;">
         <span class="gt_column_spanner"><strong>Survival Status</strong></span>
       </th>
       <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;Test Statistic&lt;/strong&gt;"><strong>Test Statistic</strong></th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;p-value&lt;/strong&gt;&lt;sup class=&quot;gt_footnote_marks&quot;&gt;2&lt;/sup&gt;"><strong>p-value</strong><sup class="gt_footnote_marks">2</sup></th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;p-value&lt;/strong&gt;&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;2&lt;/sup&gt;&lt;/span&gt;"><strong>p-value</strong><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>2</sup></span></th>
     </tr>
-    <tr>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;Female&lt;/strong&gt;, N = 45&lt;sup class=&quot;gt_footnote_marks&quot;&gt;1&lt;/sup&gt;"><strong>Female</strong>, N = 45<sup class="gt_footnote_marks">1</sup></th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;Male&lt;/strong&gt;, N = 43&lt;sup class=&quot;gt_footnote_marks&quot;&gt;1&lt;/sup&gt;"><strong>Male</strong>, N = 43<sup class="gt_footnote_marks">1</sup></th>
+    <tr class="gt_col_headings">
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;Female&lt;/strong&gt;, N = 45&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;1&lt;/sup&gt;&lt;/span&gt;"><strong>Female</strong>, N = 45<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span></th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;Male&lt;/strong&gt;, N = 43&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;1&lt;/sup&gt;&lt;/span&gt;"><strong>Male</strong>, N = 43<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span></th>
     </tr>
   </thead>
   <tbody class="gt_table_body">
@@ -1273,10 +1410,10 @@ data |>
   
   <tfoot class="gt_footnotes">
     <tr>
-      <td class="gt_footnote" colspan="5"><sup class="gt_footnote_marks">1</sup> Mean (SD) or Frequency (%)</td>
+      <td class="gt_footnote" colspan="5"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span> Mean (SD) or Frequency (%)</td>
     </tr>
     <tr>
-      <td class="gt_footnote" colspan="5"><sup class="gt_footnote_marks">2</sup> Welch Two Sample t-test</td>
+      <td class="gt_footnote" colspan="5"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>2</sup></span> Welch Two Sample t-test</td>
     </tr>
   </tfoot>
 </table>
@@ -1292,11 +1429,11 @@ fit <- survfit(Surv(time, status) ~ sex, data = data)
 # Access to the sort summary table
 summary(fit)$table
 #>            records n.max n.start events    rmean se(rmean) median 0.95LCL
-#> sex=Female      45    45      45     30 36.41036  3.325895  34.66   30.16
-#> sex=Male        43    43      43     23 41.29260  4.116515  42.07   33.67
+#> sex=Female      45    45      45     15 53.15313  5.645267  51.02   46.16
+#> sex=Male        43    43      43     20 46.28717  5.656114  31.25   20.69
 #>            0.95UCL
-#> sex=Female   52.23
-#> sex=Male     55.80
+#> sex=Female      NA
+#> sex=Male        NA
 
 ggsurvplot(fit, data = data,
  surv.median.line = "hv", # Add medians survival
@@ -1324,18 +1461,18 @@ ggsurvplot(fit, data = data,
 )
 ```
 
-<img src="staticunnamed-chunk-12-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-17-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
 - females tend to survive longer than men
 - the difference in survival time is not statistically significant at 5% level of significance
 
 ## difference in survival per diagnosis
 
-<img src="staticunnamed-chunk-13-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-18-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
 ## difference in survival per Stereotactic
 
-<img src="staticunnamed-chunk-14-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-19-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
 - those with location at supratentorial have a longer survival time as compared to their counterparts
 - the difference in survival time is rather not statistically significant
@@ -1400,10 +1537,6 @@ summary(stepmodel_logit)
 #> 
 #> Call:
 #> glm(formula = status ~ diagnosis + ki, family = binomial, data = data)
-#> 
-#> Deviance Residuals: 
-#>     Min       1Q   Median       3Q      Max  
-#> -2.4389  -0.8794   0.4698   0.8629   1.8332  
 #> 
 #> Coefficients:
 #>                    Estimate Std. Error z value Pr(>|z|)    

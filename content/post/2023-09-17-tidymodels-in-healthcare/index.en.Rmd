@@ -24,50 +24,12 @@ projects: []
   src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE, 
-                      echo = TRUE, 
-                      message = FALSE, 
-                      warning = FALSE,
-                      fig.path = "static",
-                      fig.height=6, 
-                      fig.width = 1.777777*6,
-                      fig.align='center',
-                      tidy = FALSE, 
-                      comment = NA, 
-                      highlight = TRUE, 
-                      prompt = FALSE, 
-                      crop = TRUE,
-                      comment = "#>",
-                      collapse = TRUE)
-knitr::opts_knit$set(width = 60)
-library(tidyverse)
-library(reshape2)
-theme_set(theme_light(base_size = 16))
-make_latex_decorator <- function(output, otherwise) {
-  function() {
-      if (knitr:::is_latex_output()) output else otherwise
-  }
-}
-insert_pause <- make_latex_decorator(". . .", "\n")
-insert_slide_break <- make_latex_decorator("----", "\n")
-insert_inc_bullet <- make_latex_decorator("> *", "*")
-insert_html_math <- make_latex_decorator("", "$$")
-```
+
 
 ### Load packages
 
 ```{r setup, message=FALSE}
-# install.packages('ggridges')
-# install.packages('patchwork')
-# install.packages('gt')
-# install.packages('xgboost')
-# install.packages('ranger')
-# install.packages('vip')
-# install.packages('usemodels')
-# install.packages('GGally')
-# install.packages('doParallel')
-# install.packages('glmnet')
+
 library(skimr)
 library(tidyverse)
 library(tidymodels)
@@ -81,8 +43,7 @@ library(vip)
 library(usemodels)
 library(GGally)
 library(glmnet)
-doParallel::registerDoParallel()
-theme_set(theme_light())
+
 ```
 
 ### Load the Data
@@ -337,58 +298,10 @@ rf_final_fit %>%
   collect_metrics()
 ```
 
-### Model 3: K-nearest neighbors
 
 ```{r}
-#usemodels::use_kknn(purpose ~ ., data = train)
-
-
-kknn_spec <-
-  nearest_neighbor(neighbors = tune(), weight_func = tune()) %>%
-  set_mode("classification") %>%
-  set_engine("kknn")
-
-kknn_workflow <-
-  workflow() %>%
-  add_recipe(train_rcp) %>%
-  add_model(kknn_spec)
-
-knn_grid <- grid_regular(
-  parameters(kknn_spec),
-  mtry(range = c(10, 30)),
-  levels = 5)
-
-set.seed(78590)
-kknn_tune <-
-  tune_grid(kknn_workflow,
-            resamples = resamps,
-            grid = knn_grid)
-
-kknn_tune %>%
-  autoplot()
-
-knn_best_params <- kknn_tune %>%
-  select_best(metric = 'accuracy')
-
-knn_best_spec <- kknn_spec %>%
-  finalize_model(knn_best_params)
-
-knn_final_fit <- workflow() %>%
-  add_recipe(kknn_recipe) %>%
-  add_model(knn_best_spec) %>%
-  last_fit(split = split)
-
-knn_final_fit %>%
-  collect_metrics()
-
-knn_final_fit %>%
-  collect_predictions()
-```
-
-```{r}
-models <- c('xgboost', 'xgboost', 'random forrest', 'random forrest', 'knn', 'knn')
-bind_rows(xg_final_fit %>% collect_metrics(), rf_final_fit %>% collect_metrics(), knn_final_fit %>%
-  collect_metrics()) %>% 
+models <- c('xgboost', 'xgboost', 'random forrest', 'random forrest')
+bind_rows(xg_final_fit %>% collect_metrics(), rf_final_fit %>% collect_metrics()) %>% 
   mutate(models = models) %>%
   select(models, everything(), -.config) %>% 
   gt() %>%

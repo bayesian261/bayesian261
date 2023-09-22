@@ -1,17 +1,17 @@
 ---
 title: 'Cox Proportional Hazards and Logistic Regression using Tidymodels: Brain Cancer'
-author: Bongani Ncube
-date: '2023-09-11'
-slug: cox-proportional-hazards-and-logistic-regression-brain-cancer
+author: "Bongani Ncube"
+date: "2023-09-11"
+slug: "cox-proportional-hazards-and-logistic-regression-brain-cancer"
 categories:
-  - classification
-  - kaplanmeier
-  - logistic
+- classification
+- kaplanmeier
+- logistic
 tags: []
 subtitle: ''
 summary: ''
 authors: []
-lastmod: '2023-09-11T03:11:39+02:00'
+lastmod: "2023-09-11T03:11:39+02:00"
 featured: no
 image:
   caption: ''
@@ -72,7 +72,7 @@ A data frame with 88 observations and 8 variables:
 + ki        : Karnofsky index.
 + gtv       : Gross tumor volume, in cubic centimeters.
 + stereo    : Stereotactic method factor with levels "SRS" and "SRT".
-+ status    : Whether the patient is still alive at the end of the study: 0=Yes, 1=No.
++ status    : Whether the patient is dead at the end of the study: 0=No, 1=yes.
 + time      : Survival time, in months.
 
 # Setup
@@ -90,48 +90,52 @@ skimr::skim(BrainCancer)
 
 
 
+
+
 # Explanatory data Analysis(EDA)
 
-## survival Rate
+## mortality Rate
 
 ```{r}
 data<-BrainCancer |> 
-  mutate(status=ifelse(status==1,0,1))
+  mutate(brain_status=ifelse(status==1,"yes","no"))
+
+
 data|>
-  dplyr::mutate(status = ifelse(status==0,"yes","no"))|> 
-  dplyr::group_by(status)|> 
+  dplyr::group_by(brain_status)|> 
   dplyr::summarize(count=n(),
              mean=mean(gtv, na.rm = T),
              std_dev=sd(gtv, na.rm = T),
              median=median(gtv, na.rm = T), 
              min=min(gtv, na.rm = T),
              max=max(gtv, na.rm = T))|> 
- tibble::column_to_rownames(var = "status") |> 
+ tibble::column_to_rownames(var = "brain_status") |> 
  base::as.matrix()
 
 #Calculate mortality rate
-print(paste('survival rate (%) is ',round(35/(35+53)*100,digits=2)))
+print(paste('Mortality rate (%) is ',round(35/(35+53)*100,digits=2)))
 ```
-+ the survival rate is approximately `40%`
+```{r,echo=FALSE}
+blogdown::shortcode("spoiler",text="click here",.content="the Mortality rate is approximately `40%`")
+```
 
-```{r}
+```{r , warning=FALSE}
 library(extrafont)
 loadfonts(quiet=TRUE)
 
 iv_rates <- data |>
-  dplyr::mutate(status = ifelse(status==1,"yes","no")) |> 
-  group_by(status) |>
+  group_by(brain_status) |>
   summarize(count = n()) |> 
   mutate(prop = count/sum(count)) |>
   ungroup() 
 
 plot<-iv_rates |>
-  ggplot(aes(x=status, y=prop, fill=status)) + 
+  ggplot(aes(x=brain_status, y=prop, fill=brain_status)) + 
   geom_col(color="black",width = 0.5)+ 
   theme(legend.position="bottom") + 
   geom_label(aes(label=scales::percent(prop)), color="white") + 
   labs(
-    title = "survival ratio",
+    title = "mortality ratio",
     subtitle = "Brain Cancer Analysis",
     y = "proportion(%)", 
     x = "",
@@ -146,23 +150,50 @@ geom_hline(yintercept = (sum(data$status)/nrow(data)), col = "white", lty = 2) +
 plot
 ```
 
-## survival rate by sex
+## mortality rate by sex
+### Create a customised function for summarising  categorical data per status
 
-```{r,echo=FALSE}
-iv_rates <- data |>
-  dplyr::mutate(status = ifelse(status==1,"yes","no")) |> 
-  group_by(status,sex) |>
+```{r}
+summarize_status <- function(tbl){
+  tbl %>% 
+  #group_by(occup) %>% 
+  summarise(n_died = sum(brain_status == "yes"), n_total = n()) %>%
+  ungroup() %>% 
+  mutate(pct_died = n_died / n_total) %>% 
+  arrange(desc(pct_died)) %>% 
+  mutate(low = qbeta(0.025, n_died + 5, n_total - n_died + .5),
+         high = qbeta(0.975, n_died + 5, n_total - n_died + .5),
+         pct = n_total / sum(n_total),
+         percentage=scales::percent(pct_died))
+  } 
+```
+
+### mortality rate summary per sex
+
+```{r}
+data |> 
+  group_by(sex) |> 
+  summarize_status()
+```
+
++ from the dataset , $\frac{20}{43}$ men died while the other 15 where woman who died
++ we can present these more visually with the graphs below
+
+
+```{r,echo=FALSE,warning=FALSE}
+iv_rates <- data |> 
+  group_by(brain_status,sex) |>
   summarize(count = n()) |> 
   mutate(prop = count/sum(count)) |>
   ungroup() 
 
 plot<-iv_rates |>
-  ggplot(aes(fill=status, y=prop, x=sex)) + 
-  geom_col(color="black",width = 0.5)+ 
+  ggplot(aes(fill=brain_status, y=prop, x=sex)) + 
+  geom_col(color="black",width = 0.5,position="dodge")+ 
   theme(legend.position="bottom") + 
   geom_label(aes(label=scales::percent(prop)), color="white") + 
   labs(
-    title = "survival ratio",
+    title = "Mortality ratio",
     subtitle = "Brain Cancer Analysis",
     y = "proportion(%)", 
     x = "",
@@ -176,6 +207,47 @@ geom_hline(yintercept = (sum(data$status)/nrow(data)), col = "white", lty = 2) +
   theme(legend.position = 'right')
 plot
 ```
+
+```{r}
+library(glue)
+bind_count = function(x){
+  as_tibble(x) %>% 
+  add_count(value) %>% 
+  mutate(value = glue("{value} ({n})")) %>%
+    pull(value)
+  
+}
+```
+
+```{r}
+# Scatter plot
+data %>% 
+  na.omit() %>% 
+  group_by(diagnosis = bind_count(diagnosis)) %>% 
+  summarize_status() %>% 
+  mutate(diagnosis = fct_reorder(diagnosis, pct_died)) %>% 
+  ggplot(mapping = aes(x = pct_died, y = diagnosis)) +
+  geom_point(aes(size = pct), show.legend = T) +
+  geom_errorbarh(aes(xmin = low, xmax = high), height = .3) +
+  labs(
+    x = "Percentage of patients in each category who died",
+    title = "Distribution of status by diagnosis",
+    size = "%prevalence",
+    subtitle = ""
+  ) +
+  scale_x_continuous(labels = percent) +
+  scale_size_continuous(labels = percent) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+{{% callout note %}}
+
+It seems that cumulatively, people with **LG glioma** and **HG glioma**  had high chances of death.
+
+{{% /callout %}}
+
+
+
 
 
 
@@ -193,9 +265,15 @@ data %>%
   ggthemes::theme_wsj()
 ```
 
+
+{{% callout note %}}
+
 + status is really not supposed to be numeric but rather a factor variable
 + time and gross tumor volume are all positively skewed
 + karnofsky index is as good as being a factor so i will further categorize the data 
+
+{{% /callout %}}
+
 
 ## further manipulation
 

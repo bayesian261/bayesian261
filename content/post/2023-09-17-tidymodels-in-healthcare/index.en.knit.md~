@@ -1,0 +1,905 @@
+---
+title: "Tidymodels in Healthcare"
+author: "BonganI Ncube"
+date: "2023-09-17"
+slug: "tidymodels-in-healthcare"
+categories:
+- classification
+- datascience
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: "2023-09-17T22:30:07+02:00"
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+
+
+### Load packages
+
+
+```r
+library(skimr)
+library(tidyverse)
+library(tidymodels)
+library(scales)
+library(ggridges)
+library(patchwork)
+library(gt)
+library(xgboost)
+library(ranger)
+library(vip)
+library(usemodels)
+library(GGally)
+library(glmnet)
+```
+
+### Load the Data
+
+
+```r
+td_clean <- MLDataR::thyroid_disease
+```
+
+# Exploratory data analysis
+
+As a strong visual learner, it helps me to see the data in both table and plot formats. Let's get started by looking at a few the summary statistics generated from the `skimr::skim()` combined with `summary()`. I will also use `glimpse()` to get a concise view of the data names, data types and the first few entries.
+
+
+```r
+td_clean %>% 
+  skim() %>% 
+  select(-(numeric.p0:numeric.p100)) %>%
+  select(-(complete_rate)) %>% 
+  summary()
+```
+
+Table: (\#tab:unnamed-chunk-2)Data summary
+
+|                         |           |
+|:------------------------|:----------|
+|Name                     |Piped data |
+|Number of rows           |3772       |
+|Number of columns        |28         |
+|_______________________  |           |
+|Column type frequency:   |           |
+|character                |2          |
+|numeric                  |26         |
+|________________________ |           |
+|Group variables          |None       |
+
+```r
+td_clean %>% 
+  glimpse()
+```
+
+```
+## Rows: 3,772
+## Columns: 28
+## $ ThryroidClass                  <chr> "negative", "negative", "negative", "ne~
+## $ patient_age                    <dbl> 41, 23, 46, 70, 70, 18, 59, 80, 66, 68,~
+## $ patient_gender                 <dbl> 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, ~
+## $ presc_thyroxine                <dbl> 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, ~
+## $ queried_why_on_thyroxine       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~
+## $ presc_anthyroid_meds           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~
+## $ sick                           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ~
+## $ pregnant                       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~
+## $ thyroid_surgery                <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~
+## $ radioactive_iodine_therapyI131 <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~
+## $ query_hypothyroid              <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~
+## $ query_hyperthyroid             <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ~
+## $ lithium                        <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~
+## $ goitre                         <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~
+## $ tumor                          <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, ~
+## $ hypopituitarism                <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~
+## $ psych_condition                <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~
+## $ TSH_measured                   <dbl> 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, ~
+## $ TSH_reading                    <dbl> 1.30, 4.10, 0.98, 0.16, 0.72, 0.03, NA,~
+## $ T3_measured                    <dbl> 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, ~
+## $ T3_reading                     <dbl> 2.5, 2.0, NA, 1.9, 1.2, NA, NA, 0.6, 2.~
+## $ T4_measured                    <dbl> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ~
+## $ T4_reading                     <dbl> 125, 102, 109, 175, 61, 183, 72, 80, 12~
+## $ thyrox_util_rate_T4U_measured  <dbl> 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, ~
+## $ thyrox_util_rate_T4U_reading   <dbl> 1.14, NA, 0.91, NA, 0.87, 1.30, 0.92, 0~
+## $ FTI_measured                   <dbl> 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, ~
+## $ FTI_reading                    <dbl> 109, NA, 120, NA, 70, 141, 78, 115, 132~
+## $ ref_src                        <chr> "SVHC", "other", "other", "other", "SVI~
+```
+
+
+```r
+td_clean %>% 
+  head() %>% 
+  gt() %>%
+  tab_header(title = md("**First 6 rows of loan data from lendingclub.com**"))  %>%
+  tab_options(container.height = 400,
+              container.overflow.y = TRUE,
+              heading.background.color = "#21908CFF",
+              table.width = "75%",
+              column_labels.background.color = "black",
+              table.font.color = "black") %>%
+  tab_style(style = list(cell_fill(color = "#35B779FF")),
+            locations = cells_body())
+```
+
+```{=html}
+<div id="foigjsukfx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:400px;">
+<style>#foigjsukfx table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#foigjsukfx thead, #foigjsukfx tbody, #foigjsukfx tfoot, #foigjsukfx tr, #foigjsukfx td, #foigjsukfx th {
+  border-style: none;
+}
+
+#foigjsukfx p {
+  margin: 0;
+  padding: 0;
+}
+
+#foigjsukfx .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #000000;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: 75%;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#foigjsukfx .gt_title {
+  color: #FFFFFF;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#foigjsukfx .gt_subtitle {
+  color: #FFFFFF;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#foigjsukfx .gt_heading {
+  background-color: #21908C;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_col_heading {
+  color: #FFFFFF;
+  background-color: #000000;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#foigjsukfx .gt_column_spanner_outer {
+  color: #FFFFFF;
+  background-color: #000000;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#foigjsukfx .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#foigjsukfx .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#foigjsukfx .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#foigjsukfx .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#foigjsukfx .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #000000;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#foigjsukfx .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #000000;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#foigjsukfx .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#foigjsukfx .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#foigjsukfx .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#foigjsukfx .gt_stub {
+  color: #000000;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#foigjsukfx .gt_stub_row_group {
+  color: #000000;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#foigjsukfx .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#foigjsukfx .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#foigjsukfx .gt_summary_row {
+  color: #000000;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#foigjsukfx .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#foigjsukfx .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_grand_summary_row {
+  color: #000000;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#foigjsukfx .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#foigjsukfx .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_footnotes {
+  color: #000000;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#foigjsukfx .gt_sourcenotes {
+  color: #000000;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#foigjsukfx .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#foigjsukfx .gt_left {
+  text-align: left;
+}
+
+#foigjsukfx .gt_center {
+  text-align: center;
+}
+
+#foigjsukfx .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#foigjsukfx .gt_font_normal {
+  font-weight: normal;
+}
+
+#foigjsukfx .gt_font_bold {
+  font-weight: bold;
+}
+
+#foigjsukfx .gt_font_italic {
+  font-style: italic;
+}
+
+#foigjsukfx .gt_super {
+  font-size: 65%;
+}
+
+#foigjsukfx .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#foigjsukfx .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#foigjsukfx .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#foigjsukfx .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#foigjsukfx .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#foigjsukfx .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#foigjsukfx .gt_indent_5 {
+  text-indent: 25px;
+}
+</style>
+<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+  <thead>
+    <tr class="gt_heading">
+      <td colspan="28" class="gt_heading gt_title gt_font_normal gt_bottom_border" style><strong>First 6 rows of loan data from lendingclub.com</strong></td>
+    </tr>
+    
+    <tr class="gt_col_headings">
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="ThryroidClass">ThryroidClass</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="patient_age">patient_age</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="patient_gender">patient_gender</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="presc_thyroxine">presc_thyroxine</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="queried_why_on_thyroxine">queried_why_on_thyroxine</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="presc_anthyroid_meds">presc_anthyroid_meds</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="sick">sick</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="pregnant">pregnant</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="thyroid_surgery">thyroid_surgery</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="radioactive_iodine_therapyI131">radioactive_iodine_therapyI131</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="query_hypothyroid">query_hypothyroid</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="query_hyperthyroid">query_hyperthyroid</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="lithium">lithium</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="goitre">goitre</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="tumor">tumor</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="hypopituitarism">hypopituitarism</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="psych_condition">psych_condition</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="TSH_measured">TSH_measured</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="TSH_reading">TSH_reading</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="T3_measured">T3_measured</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="T3_reading">T3_reading</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="T4_measured">T4_measured</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="T4_reading">T4_reading</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="thyrox_util_rate_T4U_measured">thyrox_util_rate_T4U_measured</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="thyrox_util_rate_T4U_reading">thyrox_util_rate_T4U_reading</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="FTI_measured">FTI_measured</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="FTI_reading">FTI_reading</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="ref_src">ref_src</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr><td headers="ThryroidClass" class="gt_row gt_left" style="background-color: #35B779;">negative</td>
+<td headers="patient_age" class="gt_row gt_right" style="background-color: #35B779;">41</td>
+<td headers="patient_gender" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="presc_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="queried_why_on_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="presc_anthyroid_meds" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="sick" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="pregnant" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="thyroid_surgery" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="radioactive_iodine_therapyI131" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hypothyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hyperthyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="lithium" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="goitre" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="tumor" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="hypopituitarism" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="psych_condition" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="TSH_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="TSH_reading" class="gt_row gt_right" style="background-color: #35B779;">1.30</td>
+<td headers="T3_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="T3_reading" class="gt_row gt_right" style="background-color: #35B779;">2.5</td>
+<td headers="T4_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="T4_reading" class="gt_row gt_right" style="background-color: #35B779;">125</td>
+<td headers="thyrox_util_rate_T4U_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="thyrox_util_rate_T4U_reading" class="gt_row gt_right" style="background-color: #35B779;">1.14</td>
+<td headers="FTI_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="FTI_reading" class="gt_row gt_right" style="background-color: #35B779;">109</td>
+<td headers="ref_src" class="gt_row gt_left" style="background-color: #35B779;">SVHC</td></tr>
+    <tr><td headers="ThryroidClass" class="gt_row gt_left" style="background-color: #35B779;">negative</td>
+<td headers="patient_age" class="gt_row gt_right" style="background-color: #35B779;">23</td>
+<td headers="patient_gender" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="presc_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="queried_why_on_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="presc_anthyroid_meds" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="sick" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="pregnant" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="thyroid_surgery" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="radioactive_iodine_therapyI131" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hypothyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hyperthyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="lithium" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="goitre" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="tumor" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="hypopituitarism" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="psych_condition" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="TSH_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="TSH_reading" class="gt_row gt_right" style="background-color: #35B779;">4.10</td>
+<td headers="T3_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="T3_reading" class="gt_row gt_right" style="background-color: #35B779;">2.0</td>
+<td headers="T4_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="T4_reading" class="gt_row gt_right" style="background-color: #35B779;">102</td>
+<td headers="thyrox_util_rate_T4U_measured" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="thyrox_util_rate_T4U_reading" class="gt_row gt_right" style="background-color: #35B779;">NA</td>
+<td headers="FTI_measured" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="FTI_reading" class="gt_row gt_right" style="background-color: #35B779;">NA</td>
+<td headers="ref_src" class="gt_row gt_left" style="background-color: #35B779;">other</td></tr>
+    <tr><td headers="ThryroidClass" class="gt_row gt_left" style="background-color: #35B779;">negative</td>
+<td headers="patient_age" class="gt_row gt_right" style="background-color: #35B779;">46</td>
+<td headers="patient_gender" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="presc_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="queried_why_on_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="presc_anthyroid_meds" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="sick" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="pregnant" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="thyroid_surgery" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="radioactive_iodine_therapyI131" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hypothyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hyperthyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="lithium" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="goitre" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="tumor" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="hypopituitarism" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="psych_condition" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="TSH_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="TSH_reading" class="gt_row gt_right" style="background-color: #35B779;">0.98</td>
+<td headers="T3_measured" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="T3_reading" class="gt_row gt_right" style="background-color: #35B779;">NA</td>
+<td headers="T4_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="T4_reading" class="gt_row gt_right" style="background-color: #35B779;">109</td>
+<td headers="thyrox_util_rate_T4U_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="thyrox_util_rate_T4U_reading" class="gt_row gt_right" style="background-color: #35B779;">0.91</td>
+<td headers="FTI_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="FTI_reading" class="gt_row gt_right" style="background-color: #35B779;">120</td>
+<td headers="ref_src" class="gt_row gt_left" style="background-color: #35B779;">other</td></tr>
+    <tr><td headers="ThryroidClass" class="gt_row gt_left" style="background-color: #35B779;">negative</td>
+<td headers="patient_age" class="gt_row gt_right" style="background-color: #35B779;">70</td>
+<td headers="patient_gender" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="presc_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="queried_why_on_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="presc_anthyroid_meds" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="sick" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="pregnant" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="thyroid_surgery" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="radioactive_iodine_therapyI131" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hypothyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hyperthyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="lithium" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="goitre" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="tumor" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="hypopituitarism" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="psych_condition" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="TSH_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="TSH_reading" class="gt_row gt_right" style="background-color: #35B779;">0.16</td>
+<td headers="T3_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="T3_reading" class="gt_row gt_right" style="background-color: #35B779;">1.9</td>
+<td headers="T4_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="T4_reading" class="gt_row gt_right" style="background-color: #35B779;">175</td>
+<td headers="thyrox_util_rate_T4U_measured" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="thyrox_util_rate_T4U_reading" class="gt_row gt_right" style="background-color: #35B779;">NA</td>
+<td headers="FTI_measured" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="FTI_reading" class="gt_row gt_right" style="background-color: #35B779;">NA</td>
+<td headers="ref_src" class="gt_row gt_left" style="background-color: #35B779;">other</td></tr>
+    <tr><td headers="ThryroidClass" class="gt_row gt_left" style="background-color: #35B779;">negative</td>
+<td headers="patient_age" class="gt_row gt_right" style="background-color: #35B779;">70</td>
+<td headers="patient_gender" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="presc_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="queried_why_on_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="presc_anthyroid_meds" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="sick" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="pregnant" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="thyroid_surgery" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="radioactive_iodine_therapyI131" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hypothyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hyperthyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="lithium" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="goitre" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="tumor" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="hypopituitarism" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="psych_condition" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="TSH_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="TSH_reading" class="gt_row gt_right" style="background-color: #35B779;">0.72</td>
+<td headers="T3_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="T3_reading" class="gt_row gt_right" style="background-color: #35B779;">1.2</td>
+<td headers="T4_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="T4_reading" class="gt_row gt_right" style="background-color: #35B779;">61</td>
+<td headers="thyrox_util_rate_T4U_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="thyrox_util_rate_T4U_reading" class="gt_row gt_right" style="background-color: #35B779;">0.87</td>
+<td headers="FTI_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="FTI_reading" class="gt_row gt_right" style="background-color: #35B779;">70</td>
+<td headers="ref_src" class="gt_row gt_left" style="background-color: #35B779;">SVI</td></tr>
+    <tr><td headers="ThryroidClass" class="gt_row gt_left" style="background-color: #35B779;">negative</td>
+<td headers="patient_age" class="gt_row gt_right" style="background-color: #35B779;">18</td>
+<td headers="patient_gender" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="presc_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="queried_why_on_thyroxine" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="presc_anthyroid_meds" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="sick" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="pregnant" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="thyroid_surgery" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="radioactive_iodine_therapyI131" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hypothyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="query_hyperthyroid" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="lithium" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="goitre" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="tumor" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="hypopituitarism" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="psych_condition" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="TSH_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="TSH_reading" class="gt_row gt_right" style="background-color: #35B779;">0.03</td>
+<td headers="T3_measured" class="gt_row gt_right" style="background-color: #35B779;">0</td>
+<td headers="T3_reading" class="gt_row gt_right" style="background-color: #35B779;">NA</td>
+<td headers="T4_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="T4_reading" class="gt_row gt_right" style="background-color: #35B779;">183</td>
+<td headers="thyrox_util_rate_T4U_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="thyrox_util_rate_T4U_reading" class="gt_row gt_right" style="background-color: #35B779;">1.30</td>
+<td headers="FTI_measured" class="gt_row gt_right" style="background-color: #35B779;">1</td>
+<td headers="FTI_reading" class="gt_row gt_right" style="background-color: #35B779;">141</td>
+<td headers="ref_src" class="gt_row gt_left" style="background-color: #35B779;">other</td></tr>
+  </tbody>
+  
+  
+</table>
+</div>
+```
+
+The loan data consists of one character variable ('purpose' = loan type) and 13 numeric variables. Let's use `geom_col()` to plot the number of times each loan type is represented in the data.
+
+
+```r
+td_clean %>% 
+  count(ThryroidClass) %>% 
+  mutate(ThryroidClass = fct_reorder(ThryroidClass, n)) %>% 
+  ggplot(aes(n, ThryroidClass, fill = ThryroidClass)) +
+  geom_col() +
+  labs(title = 'ThryroidClass by type',
+       x = 'Count',
+       y = '') +
+  theme(legend.position = 'none') +
+  tvthemes::scale_fill_avatar()
+```
+
+<div class="figure">
+<img src="index.en_files/figure-html/unnamed-chunk-4-1.png" alt="Counts of each loan type" width="672" />
+<p class="caption">(\#fig:unnamed-chunk-4)Counts of each loan type</p>
+</div>
+
+
+
+```r
+td_clean <- td_clean[complete.cases(td_clean),]
+dim(td_clean)
+```
+
+```
+## [1] 2751   28
+```
+
+## Explanatory data analysis
+
+
+```r
+# Get continuous variables only
+subset <- td_clean %>% 
+  dplyr::select(ThryroidClass, patient_age, TSH_reading, T3_reading,
+                T4_reading, thyrox_util_rate_T4U_reading,
+                FTI_reading)
+
+
+# Bring in external file for visualisations
+source('functions/visualisations.R')
+
+# Use plot function
+plot <- histoplotter(subset, ThryroidClass, 
+                     chart_x_axis_lbl = 'Thyroid Class', 
+                     chart_y_axis_lbl = 'Measures',boxplot_color = 'navy', 
+                     boxplot_fill = '#89CFF0', box_fill_transparency = 0.2) 
+
+# Add extras to plot
+plot + ggthemes::theme_solarized() + theme(legend.position = 'none') + 
+  scale_color_manual(values=c('negative' = 'red', 'positive' = 'blue'))
+```
+
+<img src="index.en_files/figure-html/distribution_function-1.png" width="672" />
+
+Numeric variables can be viewed as count distributions using `geom_histogram()`. Here, I use the `gather()` function to reshape the data into a long format and then `facet_wrap()` is used to display each histogram in a single figure.
+
+
+```r
+td_clean %>% 
+ dplyr::select(patient_age, TSH_reading, T3_reading,
+                T4_reading, thyrox_util_rate_T4U_reading,
+                FTI_reading) |>  
+  gather() %>% 
+  ggplot(aes(value, fill = key)) +
+  geom_histogram(alpha = 0.7) +
+  facet_wrap(~key, scales = 'free') +
+  labs(title = 'Count distributions for numeric variables') +
+  theme(legend.position = 'none')+
+  tvthemes::scale_fill_avatar()
+```
+
+<div class="figure">
+<img src="index.en_files/figure-html/unnamed-chunk-5-1.png" alt="Histograms of all numeric variables" width="672" />
+<p class="caption">(\#fig:unnamed-chunk-5)Histograms of all numeric variables</p>
+</div>
+
+## Splitting the data
+
+The data is split into training and test sets using the default (prop = 0.75) split. 5-fold cross validation is used to create resamples from the training set.
+
+
+```r
+td_clean <- td_clean %>% 
+  dplyr::mutate(ThryroidClass = as.factor(ThryroidClass)) %>% 
+  dplyr::select(-ref_src) %>% 
+  drop_na()
+
+# Split the dataset 
+td_split <-initial_split(td_clean, 
+                                   strata = ThryroidClass, 
+                                   prop=0.9,
+                                   breaks = 4)
+
+train <- training(td_split)
+test <- testing(td_split)
+
+resamps <- vfold_cv(train, v = 5)
+```
+
+## Predicting loan type
+
+To predict the loan type we will need to build a multiclass classification model. I am going to try three different models and compare the results to determine which model has the best predictive power.
+
+### Model 1: XGboost
+
+
+
+
+
+
+

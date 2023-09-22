@@ -27,6 +27,7 @@ ISLR2
 survival
 censored
 extrafont
+glue
 gtsummary
 ggpubr
 survminer
