@@ -1,18 +1,18 @@
 ---
-title: dplyr vs Pandas
-author: Bongani Ncube
-date: '2023-09-13'
-slug: dplyr-vs-pandas
+title: "dplyr vs Pandas"
+author: "Bongani Ncube"
+date: "2023-09-13"
+slug: "dplyr-vs-pandas"
 categories:
-  - dplyr
-  - pandas
-  - python
-  - R
+- dplyr
+- pandas
+- python
+- R
 tags: []
 subtitle: ''
 summary: ''
 authors: []
-lastmod: '2023-09-13T01:02:51+02:00'
+lastmod: "2023-09-13T01:02:51+02:00"
 featured: no
 image:
   caption: ''
@@ -31,7 +31,11 @@ projects: []
 
 # Introduction
 
+{{% callout note %}}
+
 Over the years , the debate has always been  ...which one is better for data science ,R or Python? . I say it all depends with where you are coming from and as long as you get the job done . Rstudio is a great `IDE` that supports many languages such as `sql` ,`R` and `Python` . In this tutorial i will show you how to use `python` in Rstudio as well as compare the two software syntax inorder to leverage the power of both languages. Make sure you have installed `anaconda` here https://repo.anaconda.com/archive/Anaconda3-2023.07-2-Windows-x86_64.exe
+
+{{% /callout %}}
 
 # Set up
 
@@ -263,7 +267,10 @@ df.dtypes
 
 ### R
 
+{{% callout note %}}
 The `str()` function in base R returns the data type of all, the default option also returns the dimensionality of the dataframe, length and head of each column, and gives attributes as sub structures. 
+{{% /callout %}}
+
 
 
 ```r
@@ -349,7 +356,10 @@ df1 |>  glimpse()
 #> $ name <chr> "Bongani", "blaize", "Ncube", "Ropae", "James"
 ```
 
+{{% callout note %}}
 Use the `as.character()` function to change the id field into string/character type, and use `as.numeric()` function to change it back to numeric. (id: what did I do? :p)
+
+{{% /callout %}}
 
 
 ```r
@@ -631,7 +641,9 @@ df |>  replace_na(list(col2=0,col3="Unknown"))
 
 ### Python
 
+{{% callout note %}}
 We can use the `groupby` method in Pandas to group a dataframe and then perform aggregations with `agg()`. We could put both methods in one line, or wrap the chain of methods in brackets and show them in separate lines. The latter can enhance readability when we have multiple methods chained together. 
+{{% /callout %}}
 
 
 ```python
@@ -691,7 +703,9 @@ df |>
 
 ### R
 
+{{% callout note %}}
 What if we want to do a slightly more complex aggregation which is not available as a default function/method? Let's say we want to add a column to represent percentage within each group. For example, below we have the sale of three types of fruits in two months. We would like to add a column `pct_month` to represent the sale of each fruit within each month. 
+{{% /callout %}}
 
 
 ```r

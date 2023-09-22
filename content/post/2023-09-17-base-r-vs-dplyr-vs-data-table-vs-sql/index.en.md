@@ -1,18 +1,18 @@
 ---
-title: Base R vs dplyr vs data.table
-author: Bongani Ncube
-date: '2023-09-17'
-slug: base-r-vs-dplyr-vs-data-table
+title: "Base R vs dplyr vs data.table"
+author: "Bongani Ncube"
+date: "2023-09-17"
+slug: "base-r-vs-dplyr-vs-data-table"
 categories:
-  - dplyr
-  - wrangling
-  - munging
-  - querying
+- dplyr
+- wrangling
+- munging
+- querying
 tags: []
 subtitle: ''
 summary: ''
 authors: []
-lastmod: '2023-09-17T14:20:50+02:00'
+lastmod: "2023-09-17T14:20:50+02:00"
 featured: no
 image:
   caption: ''
@@ -32,11 +32,13 @@ projects: []
 
 ## Introduction
 
+{{% callout note %}}
 One of the many reasons why people do not like R is because you find more than one way of performing an operation. But i woul like to say this could be an advantage as every possible way can have more advantage for a given task . for instance:
 
 + one could find base R syntax very boring
 + one sees dplyr syntax more intuitive
 + data.table on the other hand is very fast in terms of performing operations
+{{% /callout %}}
 
 > this blog compares the syntax for `base r` ,`tidyverse` and `data.table` for performing certain operations
 
@@ -71,6 +73,18 @@ df_base |> head(n=12)
 #> 12 12           0      3600     A       MORTGAGE     110000  27    0-15     0-8
 ```
 
+
+```r
+df_base |> 
+  summarise_if(is.character,n_distinct) |> 
+  t()
+#>                [,1]
+#> grade             7
+#> home_ownership    4
+#> emp_cat           5
+#> ir_cat            5
+```
+
 ### tidyverse
 + `readr` package from the tidyverse contains the function `read_csv()`
 
@@ -95,6 +109,11 @@ df_tidy |> head(n=12)
 #> 12    12           0      3600 A     MORTGAGE           110000    27 0-15   
 #> # i 1 more variable: ir_cat <chr>
 ```
+
+### using data.table
+
++ data.table has the function `fread()` for handling `csv` file.
+
 
 ```r
 df_table<-fread("loan_data_cleaned.csv")
@@ -126,6 +145,7 @@ df_table |> head(n=12)
 #> 11: Missing
 #> 12:     0-8
 ```
+
 ## data wrangling and processing
 + for reproducibilty we will sample only 30 rows for working with
 
@@ -138,9 +158,13 @@ df_table<- df_tidy |> as.data.table()
 ```
 
 ### selecting columns
+
+{{% callout note %}}
 #### Base R
+
 + base R use `df[row,column]` syntax to filter rows or columns
 + we can use indices or column names to do this
+{{% /callout %}}
 
 
 ```r
@@ -206,9 +230,12 @@ df_tidy |> select(loan_amnt,loan_status,grade)
 
 !["dt syntax"](data.table.png)
 
+{{% callout note %}}
+
 + data.table uses Almost the same syntax as the `data.frame` is selecting columns
 + it uses the syntax `DT[i,j,k]`
 + for columns the two are typically the same 
+{{% /callout %}}
 
 
 ```r
@@ -288,10 +315,14 @@ df_table[,.(loan_amnt,loan_status,grade)]
 
 
 ### filtering rows
+
+{{% callout note %}}
 #### Base R
 + typically you need to specify row range for this operation
 + `DF[range,]`
 + code below will only take rows 1,2,3,5 and 10
+
+{{% /callout %}}
 
 
 ```r
@@ -375,8 +406,10 @@ df_base[df_base$grade=="A"& df_base$loan_status==0,c("loan_amnt","loan_status","
 
 #### tidyverse way
 
+{{% callout note %}}
 + dplyr contains the `filter` function useful for filtering data
 + it can be used with the `slice` function to obtain results below
+{{% /callout %}}
 
 
 ```r
@@ -435,9 +468,11 @@ df_table[grade=="A"& loan_status==0,.(loan_amnt,loan_status,grade)]
 
 ## data exploration
 
+{{% callout note %}}
 #### helper filters
 + expressions for finding matches
 + lets use a different dataset for this
+{{% /callout %}}
 
 
 ```r
@@ -450,8 +485,11 @@ datatab<-df |> as.data.table()
 ```
 #### base R
 
+{{% callout note %}}
 + `grepl` function is useful for dealing with character expressions
 + the following expression will filter the rows that category matching the expression `hicken`
+
+{{% /callout %}}
 
 
 ```r
@@ -604,9 +642,10 @@ datatab[,mean(calories,na.rm=T)]
 ```
 ## summarise on filters
 
+{{% callout note %}}
 + say you want to summarize after filtering the data
 + the code below will find mean calories for rows that match chicken
-
+{{% /callout %}}
 ### base R
 
 
