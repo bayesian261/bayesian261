@@ -1,0 +1,921 @@
+---
+title: 'Survival Analysis : Part 2'
+author: "Bongani Ncube"
+date: "2023-09-23"
+slug: "survival-analysis-part-2"
+categories:
+- cox
+- GLMS
+- kaplanmeier
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: "2023-09-23T08:33:49+02:00"
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+
+{{% callout note %}}
+
+## doing survival analysis in R
+
+### functions
+
+The core functions we'll use out of the survival package include:
+
+- `Surv()`: Creates a survival object.
+- `survfit()`: Fits a survival curve using either a formula, of from a previously fitted Cox model.
+- `coxph()`: Fits a Cox proportional hazards regression model.
+
+Other optional functions you might use include: 
+
+- `cox.zph()`: Tests the proportional hazards assumption of a Cox regression model.
+- `survdiff()`: Tests for differences in survival between two groups using a log-rank / Mantel-Haenszel test.[^survdiff]
+
+> [^survdiff]: Cox regression and the logrank test from `survdiff` are going to give you similar results most of the time. The log-rank test is asking if survival curves differ significantly between two groups. Cox regression is asking which of many categorical or continuous variables significantly affect survival. 
+
+`Surv()` creates the response variable, and typical usage takes the time to event,[^time2] and whether or not the event occured (i.e., death vs censored). `survfit()` creates a survival curve that you could then display or plot. `coxph()` implements the regression analysis, and models specified the same way as in regular linear models, but using the `coxph()` function.
+{{% /callout %}}
+
+# Data description
+{{% callout note %}}
+
+- [x] status : event at discharge (alive or dead)        
+- [x] sex : male or female          
+- [x] dm : diabetes (yes or no)           
+- [x] gcs : Glasgow Coma Scale (value from 3 to 15)          
+- [x] sbp : Systolic blood pressure (mmHg)           
+- [x] dbp : Diastolic blood pressure (mmHg)          
+- [x] wbc : Total white cell count           
+- [x] time2 : days in ward         
+- [x] stroke_type : surv_data type (Ischaemic surv_data or Haemorrhagic surv_data)  
+- [x] referral_from : patient was referred from a hospital or not from a hospital
+{{% /callout %}}
+
+# setup
+```{r}
+# load in packages
+library(tidyverse)
+library(rms)
+library(broom)
+library(survival)
+library(survminer)
+library(data.table)
+library(DT)
+
+surv_data <- read_csv('stroke_data.csv')
+```
+
+## take a look at the dataset
+```{r}
+kableExtra::kbl(head(surv_data))
+```
+
+### Creating a Survival Object
+
+{{% callout note %}} 
+The survival object is created by the function `survival::Surv`, which typically requires two arguments: `event` and `time`. The survival object will be used as the outcome by the survival analysis methods we explore.
+
+Some key components of this `survfit` object that will be used to create survival curves include:
+
+- `time`: the timepoints at which the curve has a step, i.e. at least one event occurred
+- `surv`: the estimate of survival at the corresponding `time`
+{{% /callout %}}
+
+
+```{r}
+surv_object <- survival::Surv(
+  event = surv_data$status=="dead",
+  time = surv_data$time2
+)
+
+head(surv_object, 20)
+```
+
+{{% callout note %}}
+
+## Estimating the Survival Function: Kaplan-Meier Estimator
+
+The Kaplan-Meier (KM) Estimator is a non-parametric method that estimates the survival probabilities at each time an event occurs. We will use the function `survival::survfit()`, which uses the KM Estimator, to estimate survival probabilities from our data. 
+
+`survfit` requires two arguments:
+
+1. A formula object where the outcome is a survival object
+2. A data frame
+
+{{% /callout %}}
+
+```{r}
+km_result <- survival::survfit(
+  surv_object ~ 1,
+  data = surv_data
+)
+```
+
+
+
+## The Output of survfit
+
+```{r, echo = FALSE, fig.align="center"}
+km_summary <- summary(km_result)
+
+km_data <- 
+  tibble::tibble(
+    TIME = km_summary$time,
+    N_RISK = km_summary$n.risk,
+    N_EVENT = km_summary$n.event, 
+    CENSOR = km_summary$n.censor,
+    SURVIVAL = km_summary$surv
+  )
+
+km_data
+```
+
+
+## The survival probabilities for all patients:
+
+```{r,echo=FALSE}
+KM <- survfit(Surv(time = time2,event = status == "dead" ) ~ 1, 
+              data = surv_data)
+
+KM_str_type2 <- survfit(Surv(time = time2, 
+                             event = status == "dead" ) ~ stroke_type, 
+                        data = surv_data)
+```
+
+```{r,eval=FALSE}
+>KM <- survfit(Surv(time = time2,event = status == "dead" ) ~ 1, 
+              data = surv_data)
+>summary(KM)
+Call: survfit(formula = Surv(time = time2, event = status == "dead") ~ 
+    1, data = surv_data)
+
+ time n.risk n.event survival std.err lower 95% CI upper 95% CI
+    1    213       9    0.958  0.0138       0.9311        0.985
+    2    190       4    0.938  0.0168       0.9053        0.971
+    3    166       4    0.915  0.0198       0.8770        0.955
+    4    130       4    0.887  0.0237       0.8416        0.934
+    5     90       5    0.838  0.0310       0.7790        0.901
+    6     65       3    0.799  0.0367       0.7301        0.874
+    7     56       4    0.742  0.0438       0.6608        0.833
+    9     42       1    0.724  0.0462       0.6391        0.821
+   10     37       1    0.705  0.0489       0.6150        0.807
+   12     33       4    0.619  0.0587       0.5142        0.746
+   14     24       2    0.568  0.0642       0.4548        0.708
+   18     19       1    0.538  0.0674       0.4206        0.687
+   22     15       1    0.502  0.0718       0.3792        0.664
+   25      9       2    0.390  0.0892       0.2494        0.611
+   28      5       1    0.312  0.0998       0.1669        0.584
+   29      4       1    0.234  0.1009       0.1007        0.545
+   41      2       1    0.117  0.0970       0.0231        0.593
+
+```
+
+## Next, we will estimate the survival probabilities for stroke type: 
+
++ this will give us two tables ,relating to two factors that we have in the data
+
+```{r,eval=FALSE}
+>KM_str_type2 <- survfit(Surv(time = time2, 
+                             event = status == "dead" ) ~ stroke_type, 
+                        data = surv_data)
+>summary(KM_str_type2)
+
+Call: survfit(formula = Surv(time = time2, event = status == "dead") ~ 
+    stroke_type, data = surv_data)
+
+                stroke_type=HS 
+ time n.risk n.event survival std.err lower 95% CI upper 95% CI
+    1     69       6    0.913  0.0339       0.8489        0.982
+    2     61       1    0.898  0.0365       0.8293        0.973
+    3     58       4    0.836  0.0453       0.7520        0.930
+    4     52       2    0.804  0.0489       0.7136        0.906
+    5     47       4    0.736  0.0554       0.6346        0.853
+    6     38       2    0.697  0.0589       0.5905        0.822
+    7     34       2    0.656  0.0621       0.5447        0.790
+    9     30       1    0.634  0.0638       0.5205        0.772
+   10     27       1    0.611  0.0656       0.4945        0.754
+   12     24       2    0.560  0.0693       0.4390        0.713
+   14     19       1    0.530  0.0717       0.4068        0.691
+   18     15       1    0.495  0.0751       0.3675        0.666
+   22     11       1    0.450  0.0806       0.3166        0.639
+   25      6       2    0.300  0.1019       0.1541        0.584
+   29      2       1    0.150  0.1176       0.0322        0.698
+```
+
+{{% callout warning %}}
++ this is another output ,technically they should be together in one call
+{{% /callout %}}
+
+```{r,eval=FALSE}
+stroke_type=IS 
+ time n.risk n.event survival std.err lower 95% CI upper 95% CI
+    1    144       3    0.979  0.0119        0.956        1.000
+    2    129       3    0.956  0.0174        0.923        0.991
+    4     78       2    0.932  0.0241        0.886        0.980
+    5     43       1    0.910  0.0318        0.850        0.975
+    6     27       1    0.876  0.0451        0.792        0.970
+    7     22       2    0.797  0.0676        0.675        0.941
+   12      9       2    0.620  0.1223        0.421        0.912
+   14      5       1    0.496  0.1479        0.276        0.890
+   28      3       1    0.331  0.1671        0.123        0.890
+   41      1       1    0.000     NaN           NA           NA
+```
+
+{{% callout note %}}
+
+## Plot the survival probability 
+
+The KM estimate provides the survival probabilities. We can plot these probabilities to look at the trend of survival over time. The plot provides
+
+
+1.  survival probability\index{Survival probability} on the $y-axis$
+2.  time on the $x-axis$
+{{% /callout %}}
+
+## Plotting the Survival Function
+
+```{r, out.width="50%", out.height="50%", fig.align = "center"}
+survminer::ggsurvplot(
+  km_result,
+  pval = TRUE,
+  conf.int = TRUE,
+  xlab = "Time",
+  ylab = "Probability of dying"
+)
+```
+
+
+## Using the KM Estimator to Plot Multiple Survival Functions
+
+```{r, fig.align = "center", out.width="60%", out.height="60%"}
+km_result_jobs <- survival::survfit(surv_object ~stroke_type, data = surv_data)
+
+survminer::ggsurvplot(km_result_jobs, pval = TRUE, xlab = "Time", ylab = "Probability of dying")
+```
+
+## Making it more fency
+
++ i always love to make the graphs more fency 
++ i have used ggplot2 extended functionalities to make the plots pretty neat 
+
+```{r}
+library(paletteer)
+p1<-ggsurvplot(KM_str_type2, 
+           data = surv_data,
+           palette = paletteer_d("ggsci::light_blue_material")[seq(2,10,2)], 
+                 size = 1.2, conf.int = FALSE, 
+                 legend.labs = levels(surv_data$stroke_type),
+                 legend.title = "",
+                 ggtheme = theme_minimal() + 
+             theme(plot.title = element_text(face = "bold")),
+                 title = "Probability of dying",
+                 xlab = "Time",
+                 ylab = "Probability of dying",
+                 legend = "bottom", censor = FALSE)
+
+p1$plot +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(1,43,1),
+                     labels = seq(1,43,1),
+                     limits = c(0, 820)) +
+  scale_y_continuous(expand = c(0, 0), breaks = seq(0,1,0.2),
+                     labels = scales::percent_format(accuracy = 1)) +
+  theme_classic() 
+
+```
+
+
+We can perform the Kaplan-Meier\index{Kaplan-Meier} estimates for variable dm too: 
+
+```{r}
+KM_dm <- survfit(Surv(time = time2, 
+                      event = status == "dead" ) ~ dm,
+                 data = surv_data)
+summary(KM_dm)
+```
+
+And then we can plot the survival estimates for patients with and without diabetes:
+
+```{r}
+p2<-ggsurvplot(KM_dm, 
+           data = surv_data, 
+                 palette = paletteer_c("grDevices::Set 2", 12), 
+                 size = 1.2, conf.int = FALSE,
+                 legend.labs = levels(surv_data$dm),
+                 legend.title = "",
+                 ggtheme = theme_minimal() + 
+             theme(plot.title = element_text(face = "bold")),
+                 title = "Probability of dying",
+                 xlab = "Time till discharge",
+                 ylab = "Probability of dying",
+                 legend = "bottom", censor = FALSE)
+
+p2
+```
+
+
++ Typically we will also want to see the numbers at risk in a table below
+the x-axis. We can add this using `add_risktable()`:
+
+
+```{r}
+library(ggsurvfit)
+survfit2(Surv(time = time2,event = status == "dead" ) ~ dm, data = surv_data) %>% 
+  ggsurvfit() +
+  labs(
+    x = "Days",
+    y = "Overall survival probability"
+    ) + 
+  add_confidence_interval() +
+  add_risktable()
+```
+{{% callout note %}}
+
+## Comparing Kaplan-Meier\index{Kaplan-Meier} estimates across groups 
+
+There are a number of available tests to compare the survival estimates between groups based on KM. The tests include: 
+
+1.  log-rank\index{Log-rank test} (default)
+2.  peto-peto test\index{Peto-peto test}
+
+
+### Log-rank test\index{Log-rank test}
+
+to answer question if the survival estimates are different between levels or groups we can use statistical tests for example the log rank and the peto-peto tests\index{Peto-peto test}.
+
+For all the test, the null hypothesis is that that the survival estimates between levels or groups are not different. For example, to do that:
+{{% /callout %}}
+
+```{r,eval=FALSE}
+>survdiff(Surv(time = time2, 
+              event = status == "dead") ~ stroke_type, 
+         data = surv_data,
+         rho = 0)
+Call:
+survdiff(formula = Surv(time = time2, event = status == "dead") ~ 
+    stroke_type, data = surv_data, rho = 0)
+
+                 N Observed Expected (O-E)^2/E (O-E)^2/V
+stroke_type=HS  69       31     24.2      1.92      4.51
+stroke_type=IS 144       17     23.8      1.95      4.51
+
+ Chisq= 4.5  on 1 degrees of freedom, p= 0.03 
+```
+
+{{% callout note %}}
+> The survival estimates between the surv_data types (*IS* vs *HS* groups) are different at the level of $5\%$ significance (p-value = 0.03). 
+
+{{% /callout %}}
+
+## *And for the survival estimates based on diabetes status:*
+
+```{r,eval=FALSE}
+>survdiff(Surv(time = time2, 
+              event = status == "dead") ~ dm, 
+         data = surv_data,
+         rho = 0)
+Call:
+survdiff(formula = Surv(time = time2, event = status == "dead") ~ 
+    dm, data = surv_data, rho = 0)
+
+         N Observed Expected (O-E)^2/E (O-E)^2/V
+dm=no  141       35     29.8     0.919      2.54
+dm=yes  72       13     18.2     1.500      2.54
+
+ Chisq= 2.5  on 1 degrees of freedom, p= 0.1 
+```
+
+The survival estimates between patients with and without diabetes (dm status *yes* vs *no* groups) are not different (p-value = 0.1). 
+
+
+
+
+## Cox PH General model
+
+The Cox model is expressed by the **hazard function** denoted by $h(t)$.
+This model can be used to fit univariable and multivariable regression
+models that have survival outcomes. The hazard function can be
+interpreted as the risk of dying at time t. It can be estimated as
+follow:
+
+$h(t, X_{i}) = h_{0}(t)e^{ \sum_{j=1}^{p} \beta_{j}X_{i,j}} = h_{0}(t)exp(\beta_{1}X_{i,1} + ... +\ beta_{p}X_{i,p})$
+
+
+where:
+
+-   $h(t)$ is the hazard, the instantaneous rate at which events occur.
+-   $h_{0}(t)$ is called the **baseline hazards** (when all X's are
+    equal to 0), depends on $t$
+-   $X = (X_{1}, X_{2},..., X_{p})$ explanatory/predictor variables
+-   $e^{ \sum_{i=1}^{p} \beta_{i}X_{i}}$, depends only on X's, called
+    \textbf{time-independent}.
+
+Because the **baseline hazard** $h_{0}(t)$ is an unspecified function,
+the Cox model us a **semiparametric** model.
+
+{{% callout note %}}
+Advantages of the model: "robust" model, so that the results from using
+the Cox model will closely approximate the results for the correct parametric model.
+{{% /callout %}}
+
+The Cox model can be written as a multiple linear regression of the
+logarithm of the hazard on the variables $X_{i}$, with the baseline
+hazard, $h_{0}(t)$, being an 'intercept' term that varies with time.
+
+$$log(h(t, X_{i})) = log(h_{0}(t)) + \sum_{j=1}^{p} \beta_{j}X_{i,j}$$
+
+We can compute the **hazard ratio**, which is the ratio of hazards
+between two groups at any particular point in time: "hazard for one
+individual divided by the hazard for a different individual".
+
+$$\hat{HR} = \frac{\hat{h}(t, X^{*})}{\hat{h}(t, X)} = e^{ \sum_{i=1}^{p} \beta_{i} (X^{*}_{i} - X_{i})}$$
+
+with:
+
+$X^{*}$: set of predictors for one individual
+
+X: set of predictors for the other individual
+
+This model shows that the hazard ratio is equal to
+$e^{ \sum_{i=1}^{p} \beta_{i} (X^{*}_{i} - X_{i})}$, and remains
+constant over time t (hence the name proportional hazards regression).
+In this sense, we do not need the baseline hazard because we can
+interpret coefficients as hazard ratios.
+
+{{% callout note %}}
+A hazard ratio above 1 indicates a covariate that is positively
+associated with the event probability, and thus negatively associated
+with the length of survival.
+
+In summary,
+
+-   HR = 1 : No effect
+-   HR \< 1: Reduction in the hazard
+-   HR \> 1: Increase in Hazard
+
+As a note, in clinical studies, a covariate with hazard ratio :
+
+-   greater than 1 (i.e.: b\>0) is called bad prognostic factor.
+-   smaller than 1 (i.e.: b\<0) is called good prognostic factor.
+{{% /callout %}}
+
+
+
+As a consequence, a major assumption of this model is that the HR is
+constant over time because it is independent of time. Or equivalently
+that the hazard for one individual is proportional to the hazard for any
+other individual, where the proportionality constant is independent of
+time.
+
+It is possible, nevertheless, to consider X's which do involve t. Such
+X's are called time-dependent variables. If time-dependent variables are
+considered, the Cox model form may still be used, but such a model no
+longer satisfies the PH assumption, and is called the extended Cox
+model.
+
+{{% callout note %}}
+
+### Compute the Cox Model
+
+-   The coxph() function uses the same syntax as lm(), glm(), etc. The
+    response variable you create with Surv() goes on the left hand side
+    of the formula, specified with a \~. Explanatory variables go on the
+    right side.
+{{% /callout %}}
+
+## COX PH model with surv_data type variable only
+
+```{r}
+(surv_data_stype <- coxph(Surv(time2,status == 'dead') ~  stroke_type
+                       ,data = surv_data))
+```
+{{% callout note %}}
+
+## interpretting
+
+The effect of surv_data type is significantly related to survival (p-value =
+0.0368), with better survival in Ischaemic surv_data in comparison to the other type (hazard ratio of dying = 0.5157).
+
+The model is statistically significant. That 0.03344 p-value of the
+model is really close to the p = 0.03 p-value we saw on the
+Kaplan-Meier nodel as well as the likelihood ratio test = 4.52 is close
+to the log-rank chi-square (4.5) in the Kaplan-Meier model.
+{{% /callout %}}
+
+$e^{\beta_{1}}$ = $e^{-0.6622}$ = 0.5157 is the hazard ratio - the
+multiplicative effect of that variable on the hazard rate (for each unit
+increase in that variable). Ischaemic surv_data patients have 0.588 (\~ 60%) times the hazard of dying in comparison to haemorage. 
+
+{{% callout note %}}
+
+### Model Building
+
+> this is important when perfoming statistical analysis
+
++ first build a model with all varibles
+
+```{r,eval=FALSE}
+>surv_data_stype <- coxph(Surv(time2,status == 'dead') ~ gcs + stroke_type
+                      + sex + dm + sbp ,data = surv_data)
+>summary(surv_data_stype)
+Call:
+coxph(formula = Surv(time2, status == "dead") ~ gcs + stroke_type + 
+    sex + dm + sbp, data = surv_data)
+
+  n= 213, number of events= 48 
+
+                   coef exp(coef)  se(coef)      z Pr(>|z|)    
+gcs           -0.170038  0.843633  0.037167 -4.575 4.76e-06 ***
+stroke_typeIS -0.103523  0.901655  0.346749 -0.299    0.765    
+sexmale       -0.203488  0.815880  0.334159 -0.609    0.543    
+dmyes         -0.439913  0.644093  0.343960 -1.279    0.201    
+sbp           -0.001765  0.998237  0.004017 -0.439    0.660    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+```
+```{r,eval=FALSE}
+              exp(coef) exp(-coef) lower .95 upper .95
+gcs              0.8436      1.185    0.7844    0.9074
+stroke_typeIS    0.9017      1.109    0.4570    1.7791
+sexmale          0.8159      1.226    0.4238    1.5706
+dmyes            0.6441      1.553    0.3282    1.2639
+sbp              0.9982      1.002    0.9904    1.0061
+
+Concordance= 0.78  (se = 0.035 )
+Likelihood ratio test= 28.88  on 5 df,   p=2e-05
+Wald test            = 27.71  on 5 df,   p=4e-05
+Score (logrank) test = 31.45  on 5 df,   p=8e-06
+```
+
+- the estimate which is the log hazard. If you exponentiate it, you will get hazard ratio
+- the standard error
+- the p-value
+- the confidence intervals for the log hazard
+{{% /callout %}}
+
+
+```{r}
+stroke_type <- coxph(Surv(time2,status == 'dead') ~ gcs + stroke_type+dbp+wbc
+                      + sex + dm + sbp ,data = surv_data)
+tidy(surv_data_stype,
+     exponentiate = TRUE) 
+
+```
+
+### using rms package
+
+```{r}
+fatal_mv1<-rms::cph(Surv(time2,status == 'dead') ~ gcs + stroke_type+dbp+wbc
+                      + sex + dm + sbp ,data = surv_data)
+
+
+```
+
+## variable importance
+
+```{r}
+plot(anova(fatal_mv1),margin=c("chisq","d.f","P"))
+```
+
+
+## now we create univariate models as in logistic regression
+
+By using `tbl_uvregression()` we can generate simple univariable model for all covariates in one line of code. In return, we get the crude HR for all the covariates of interest.
+
+```{r}
+library(gt)
+library(gtsummary)
+surv_data |>
+  dplyr::select(time2, status, sex, dm, gcs, sbp, dbp, wbc, 
+                stroke_type) |>
+  tbl_uvregression(
+    method = coxph,
+    y = Surv(time2, event = status == 'dead'),
+    exponentiate = TRUE,
+    pvalue_fun = ~style_pvalue(.x, digits = 3)
+  ) |>
+  as_gt()
+```
+
++ it is clear that `gcs` has the least p-value hence can be included in the model first
+
+```{r}
+surv_data_gcs <- coxph(Surv(time = time2,event = status == 'dead') ~ gcs,
+                     data = surv_data)
+summary(surv_data_gcs)
+```
+
+
+The simple Cox PH model with covariate gcs shows that with each one unit increase in gcs, the crude log hazard for death changes by a factor of $-0.175$. 
+
+# lets tidy it up
+
+```{r}
+tidy(surv_data_gcs,
+     exponentiate = TRUE,
+     conf.int = TRUE)
+```
+
+{{% callout note %}}
+When we exponentiate the log HR, the simple Cox PH model shows that with each one unit increase in gcs, the crude risk for death decreases for about $16\%$ and the of decrease are between $95\% CI (0.785, 0.898)$. The relationship between surv_data death and gcs is highly significant (p-value $< 0.0001$) when not adjusting for other covariates. 
+
+{{% /callout %}}
+
+## next up we add surv_data type
+
+```{r}
+surv_data_mv <- 
+  coxph(Surv(time = time2, 
+             event = status == 'dead') ~ stroke_type +  gcs , 
+        data = surv_data)
+tidy(surv_data_mv, exponentiate = TRUE, conf.int = TRUE)
+```
+
+## lets test if surv_data type is worth it
+
+```{r}
+anova(surv_data_mv,surv_data_gcs,test="LRT")
+```
+
++ The variable is not significant
+
+## we try another one 
+
+```{r}
+surv_data_dm <- 
+  coxph(Surv(time = time2, 
+             event = status == 'dead') ~ dm +  gcs , 
+        data = surv_data)
+tidy(surv_data_dm, exponentiate = TRUE, conf.int = TRUE)
+```
+
+## lets test if dm is worth it
+
+```{r}
+anova(surv_data_dm,surv_data_gcs,test="LRT")
+```
+
++ still not worth is it , we can go on and on...
+
+## lets do a backward elimination
+
+```{r}
+fatal_mv1<-rms::cph(Surv(time2,status == 'dead') ~ gcs + stroke_type+dbp+wbc
+                      + sex + dm + sbp ,data = surv_data)
+fastbw(fatal_mv1)
+```
++ final model has gcs variable
+
+{{% callout note %}} 
+
+## Validity of the Cox PH model
+
+The Cox proportional hazards model makes several assumptions. We use
+residuals methods to:
+
+-   check the proportional hazards assumption with the Schoenfeld
+    residuals
+-   detect nonlinearity in relationship between the log hazard and the
+    covariates using Martingale residual
+-   examining influential observations (or outliers) with deviance
+    residual (symmetric transformation of the martinguale residuals), to
+    examine influential observations
+{{% /callout %}}
+
+## Testing proportional hazard
+
+The proportional hazard assumption is supported by a non-significant
+relationship between residuals and time, and refuted by a significant
+relationship.
+
+We can test with the **Goodness of Fit (GOF)** approach based on the
+residuals defined by Schoenfeld.
+
+The idea behind the statistical test is that if the PH assumption holds
+for a particular covariate then the Schoenfeld residuals for that
+covariate will not be related to survival time.
+
+{{% callout note %}}
+
+## The implementation of the test can be thought of as a three-step process.
+
+- [x] Step 1. Run a Cox PH model and obtain Schoenfeld residuals for each
+    predictor.
+
+- [x] Step 2. Create a variable that ranks the order of failures. The
+    subject who has the first (earliest) event gets a value of 1, the
+    next gets a value of 2, and so on.
+
+- [x] Step 3. Test the correlation between the variables created in the
+    first and second steps. The null hypothesis is that the correlation
+    between the Schoenfeld residuals and ranked failure time is zero.
+
+>For each covariate, the function cox.zph() correlates the corresponding
+set of scaled Schoenfeld residuals with time, to test for independence
+between residuals and time. Additionally, it performs a global test for
+the model as a whole.
+
+{{% /callout %}}
+
+```{r}
+test.ph <- cox.zph(stroke_type)
+print(test.ph)
+```
+
+
+
+```{r , fig.height=5}
+ggcoxzph(test.ph)
+```
+
+ 
+{{% callout note %}}
+From the output above, the test is not statistically significant, and
+therefore the global test is also not statistically significant.
+Therefore, we can assume the proportional hazards.
+
+In the graphical diagnostic using the function ggcoxzph() [in the
+survminer package], the solid line is a smoothing spline fit to the
+plot, with the dashed lines representing a +/- 2-standard-error band
+around the fit. From the graphical inspection, there is no pattern with
+time. The assumption of proportional hazards appears to be supported for
+the covariates sex (which is, recall, a two-level factor, accounting for
+the two bands in the graph).
+{{% /callout %}}
+
+## another approach
+
+Another approach is to graphically check the PH assumption by comparing
+**-log--log survival curves**. A log--log survival curve is simply a
+transformation of an estimated survival curve that results from taking
+the natural log of an estimated survival probability twice.
+
+$h(t, X) = h_{0}(t)e^{ \sum_{j=1}^{p} \beta_{j}X_{j}}$ which is
+equivalent to $S(t,X) = [S_{0}(t)]^{e^{ \sum_{j=1}^{p} \beta_{j}X_{j}}}$
+
+Therefore, $$-ln(-ln(S(t, X)))$$
+
+$$= -ln(-ln([S_{0}(t)]^{e^{ \sum_{j=1}^{p} \beta_{j}X_{j}}}))$$
+$$= -ln[-ln(S_{0}(t))] - ln[e^{ \sum_{j=1}^{p} \beta_{j}X_{j}}]$$
+
+$$=  - \sum_{j=1}^{p} \beta_{j} X_{j} - ln[-ln(S_{0}(t))]$$
+
+Therefore, the corresponding log--log curves for these individuals are
+given as shown here, where we have simply substituted $X_1$ and $X_2$
+for $X$ in the previous expression for the log--log curve for any
+individual $X$.
+
+$$ln(-ln(S(t, X_1))) - ln(-ln(S(t, X_2)))$$
+$$= \sum_{j=1}^{p} \beta_{j} (X_{1j} - X_{2j})$$
+
+The baseline survival function has dropped out, so that the difference
+in log--log curves involves an expression that does not involve time t.
+The above formula says that if we use a Cox PH model and we plot the
+estimated -log--log survival curves for two groups of individuals on the
+same graph, the two plots would be approximately parallel.
+
+{{% callout note %}}
+The distance between the two curves is the linear expression involving
+the differences in predictor values, which does not involve time. Note,
+in general, if the vertical distance between two curves is constant,
+then the curves are parallel.
+{{% /callout %}}
+
+```{r}
+m = survfit(Surv(time2,status == 'dead') ~  stroke_type
+                       ,data = surv_data)
+s = summary(m)
+s_table = data.frame(s$strata, s$time, s$n.risk, s$n.event, s$n.censor, s$surv, s$lower, s$upper)
+s_table = s_table %>%
+              rename(strata=s.strata, time=s.time, surv=s.surv, lower=s.lower, upper=s.upper) %>%
+              mutate(negloglogsurv=-log(-log(surv)))
+```
+
+
+```{r}
+plot<-ggplot(s_table, aes(x=time, y=negloglogsurv, color=strata)) + 
+  geom_line(size=1.25) +
+  theme(text=element_text(size=16),
+        plot.title=element_text(hjust=0.5)) +
+  ggthemes::scale_colour_tableau()+
+  tvthemes::theme_avatar()+
+  ylab("-ln(-ln(S(t)))") +
+  ggtitle("-log-log plot of survival time by surv_data type")
+```
+
+
+```{r ,fig.height=5}
+plot
+```
+
+The two curve cross, therefore this result suggests that the two
+groups in surv_data type do not satisfy the PH assumption.
+
+{{% callout note %}}
+
+## Testing influential observations
+
+To test influential observations or outliers, we can visualize either:
+the **dfbeta values** or the **deviance residuals**.
+
+-   
+
+    1)  dfbeta values
+
+This plot produces the estimated changes in the coefficients divided by
+their standard errors. The comparison of the magnitudes of the largest
+dfbeta values to the regression coefficients suggests that none of the
+observations is terribly influential individually.
+
+{{% /callout %}}
+
+```{r,fig.height=4}
+ggcoxdiagnostics(surv_data_stype, type = "dfbeta",
+                 linear.predictions = FALSE, ggtheme = theme_bw())
+```
+
+{{% callout note%}} 
+
+    2)  deviance residuals
+
+The deviance residual is a normalized transformation of the martingale
+residual. These residuals should be roughly symmetrically distributed
+about zero with a standard deviation of 1.
+
+- [x]  Positive values correspond to individuals that "died too soon"
+    compared to expected survival times.
+
+- [x]  Negative values correspond to individual that "lived too long".
+
+- [x]  Very large or small values are outliers, which are poorly predicted
+    by the model.
+
+{{% /callout %}}
+
+```{r,fig.height=4}
+ggcoxdiagnostics(stroke_type, type = "deviance",
+                 linear.predictions = FALSE, tvtheme = theme_avatar())
+```
+
+
+```{r,fig.height=4}
+ggcoxdiagnostics(stroke_type, type = "martingale",
+                 linear.predictions = FALSE, ggtheme = theme_bw())
+```
+
+```{r}
+ggcoxdiagnostics(stroke_type, type = "deviance", ox.scale = 'time')
+```
+
+```{r}
+ggcoxdiagnostics(stroke_type, type = "deviance", ox.scale = "linear.predictions")
+```
+
+```{r}
+ggcoxdiagnostics(stroke_type, type = "schoenfeld", ox.scale = "observation.id")
+```
+

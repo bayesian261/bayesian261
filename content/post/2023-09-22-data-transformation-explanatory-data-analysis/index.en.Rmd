@@ -114,10 +114,12 @@ names(new_data)
 
 Take a peek at the recipe site dataset.
 
+{{% callout note %}}
 The dataset contains:
 
 -   947 observations
 -   8 variables
+{{% /callout %}}
 
 ```{r}
 glimpse(new_data)

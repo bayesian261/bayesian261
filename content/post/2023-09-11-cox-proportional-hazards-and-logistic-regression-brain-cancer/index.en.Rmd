@@ -79,9 +79,9 @@ A data frame with 88 observations and 8 variables:
 
 ```{r}
 library(pacman)
-p_load(tidyverse, tidymodels, ISLR2, survival, censored)
+p_load(tidyverse, tidymodels, ISLR2, survival, censored,dlookr,d)
 
-glimpse(BrainCancer)
+desc(BrainCancer)
 ```
 
 ```{r}
@@ -510,7 +510,7 @@ lr_mod <- parsnip::logistic_reg()|>
   set_mode("classification")  
 
 model<-lr_mod |> 
-  fit(status~. -time,data=data)
+  fit(status~. -time,-brain_status,data=data)
 
 model %>%
   pluck("fit") %>%
