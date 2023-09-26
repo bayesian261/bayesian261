@@ -1,0 +1,49 @@
+<table style="border-collapse:collapse; border:none;">
+<caption style="font-weight: bold; text-align:left;">Cross Tab Smoking x Cancer</caption>
+ <tr>
+ <th style="border-top:double; text-align:center; font-style:italic; font-weight:normal; border-bottom:1px solid;" rowspan="2">diagnosis</th>
+ <th style="border-top:double; text-align:center; font-style:italic; font-weight:normal;" colspan="2">brain_status</th>
+ <th style="border-top:double; text-align:center; font-style:italic; font-weight:normal; font-weight:bolder; font-style:italic; border-bottom:1px solid; " rowspan="2">Total</th>
+ </tr>
+ 
+<tr>
+ <td style="border-bottom:1px solid; text-align:center; padding:0.2cm;">no</td>
+ <td style="border-bottom:1px solid; text-align:center; padding:0.2cm;">yes</td>
+ </tr>
+ 
+<tr> 
+<td style="padding:0.2cm;  text-align:left; vertical-align:middle;">Meningioma</td>
+<td style="padding:0.2cm; text-align:center; "><span style="color:black;">33</span><br><span style="color:#333399;">78.6&nbsp;&#37;</span></td>
+<td style="padding:0.2cm; text-align:center; "><span style="color:black;">9</span><br><span style="color:#333399;">21.4&nbsp;&#37;</span></td>
+<td style="padding:0.2cm; text-align:center;  "><span style="color:black;">42</span><br><span style="color:#333399;">100&nbsp;&#37;</span></td> 
+</tr>
+ 
+<tr> 
+<td style="padding:0.2cm;  text-align:left; vertical-align:middle;">LG glioma</td>
+<td style="padding:0.2cm; text-align:center; "><span style="color:black;">5</span><br><span style="color:#333399;">55.6&nbsp;&#37;</span></td>
+<td style="padding:0.2cm; text-align:center; "><span style="color:black;">4</span><br><span style="color:#333399;">44.4&nbsp;&#37;</span></td>
+<td style="padding:0.2cm; text-align:center;  "><span style="color:black;">9</span><br><span style="color:#333399;">100&nbsp;&#37;</span></td> 
+</tr>
+ 
+<tr> 
+<td style="padding:0.2cm;  text-align:left; vertical-align:middle;">HG glioma</td>
+<td style="padding:0.2cm; text-align:center; "><span style="color:black;">5</span><br><span style="color:#333399;">22.7&nbsp;&#37;</span></td>
+<td style="padding:0.2cm; text-align:center; "><span style="color:black;">17</span><br><span style="color:#333399;">77.3&nbsp;&#37;</span></td>
+<td style="padding:0.2cm; text-align:center;  "><span style="color:black;">22</span><br><span style="color:#333399;">100&nbsp;&#37;</span></td> 
+</tr>
+ 
+<tr> 
+<td style="padding:0.2cm;  text-align:left; vertical-align:middle;">Other</td>
+<td style="padding:0.2cm; text-align:center; "><span style="color:black;">9</span><br><span style="color:#333399;">64.3&nbsp;&#37;</span></td>
+<td style="padding:0.2cm; text-align:center; "><span style="color:black;">5</span><br><span style="color:#333399;">35.7&nbsp;&#37;</span></td>
+<td style="padding:0.2cm; text-align:center;  "><span style="color:black;">14</span><br><span style="color:#333399;">100&nbsp;&#37;</span></td> 
+</tr>
+ 
+<tr> 
+<td style="padding:0.2cm;  border-bottom:double; font-weight:bolder; font-style:italic; text-align:left; vertical-align:middle;">Total</td>
+<td style="padding:0.2cm; text-align:center;   border-bottom:double;"><span style="color:black;">52</span><br><span style="color:#333399;">59.8&nbsp;&#37;</span></td>
+<td style="padding:0.2cm; text-align:center;   border-bottom:double;"><span style="color:black;">35</span><br><span style="color:#333399;">40.2&nbsp;&#37;</span></td>
+<td style="padding:0.2cm; text-align:center;   border-bottom:double;"><span style="color:black;">87</span><br><span style="color:#333399;">100&nbsp;&#37;</span></td> 
+</tr>
+ 
+</table>

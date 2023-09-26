@@ -1,17 +1,17 @@
 ---
-title: 'Cox Proportional Hazards and Logistic Regression using Tidymodels: Brain Cancer'
-author: Bongani Ncube
-date: '2023-09-11'
-slug: cox-proportional-hazards-and-logistic-regression-brain-cancer
+title: 'Cox Proportional Hazards using Tidymodels: Brain Cancer'
+author: "Bongani Ncube"
+date: "2023-09-11"
+slug: "cox-proportional-hazards-using-Tidymodels-brain-cancer"
 categories:
-  - classification
-  - kaplanmeier
-  - logistic
+- classification
+- kaplanmeier
+- logistic
 tags: []
 subtitle: ''
 summary: ''
 authors: []
-lastmod: '2023-09-11T03:11:39+02:00'
+lastmod: "2023-09-11T03:11:39+02:00"
 featured: no
 image:
   caption: ''
@@ -26,232 +26,477 @@ projects: []
   src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
 
-# Introduction
+{{% callout note %}}
 
-In this tutorial i explore the brain cancer dataset . This is a work in progress and will be continuously updated along the way . The main emphasis is in using the **tidymodels** approach for fitting regression models in R.
+## Introduction
 
-## Methodology
+Brain Cancers include primary brain tumours which starts in the brain and almost never spread to other parts of the body and secondary tumours which are caused by cancers that began in another part of the body .
+
+> There are more than 40 major types of brain tumours, which are grouped into two main types:
+
+- benign - slow-growing and unlikely to spread. Common types are meningiomas, neuromas, pituitary tumours and craniopharyngiomas.
+- malignant - cancerous and able to spread into other parts of the brain or spinal cord. Common types include astrocytomas, oligodendrogliomas, glioblastomas and mixed gliomas.
+
+> It is estimated that more than 1,900 people were diagnosed with brain cancer in 2023. The average age at diagnosis is 59 years old.
+
+### Brain cancer signs and symptoms
+
+Headaches are often the first symptom of a brain tumour. The headaches can be mild, severe, persistent, or come and go. A headache isn’t always a brain tumour but if you’re worried, be sure to see your GP.
+
+#### Other symptoms include:
+
+- [x] seizures: severe (e.g. a convulsion) or mild (a fleeting disturbance of awareness, sensation or jerking muscles) weakness or paralysis in part of the body
+- [x] loss of balance
+- [x] general irritability, drowsiness or a change in personality nausea and vomiting
+- [x] disturbed vision, hearing, smell or taste.
+
+## References
+
+- Understanding Brain Tumours, Cancer Council Australia ©2020. Last medical review of source booklet: May 2020.
+- Australian Institute of Health and Welfare. Cancer data in Australia \[Internet\]. Canberra: Australian Institute of Health and Welfare, 2023 \[cited 2023 Sept 04\]. Available from: https://www.aihw.gov.au/reports/cancer/cancer-data-in-australia
+
+## Objectives of the study
+
+- determine factors that determine mortality of brain cancer patients
+- compare survival times of certain groups of breast cancer patients
+- determine the extend to which diagnosis affects survival of patients
+- learn more about using R for biostatistical studies and clinical research
+
+### Methodology
 
 My research aims at patients’ brain cancer survival analysis . In the analysis I did a detailed research on the variables that determine whether patients get over a disease or surrender in a certain duration time. Thus I used a non-parametric statistic estimator to create a Kaplan-Meier Survival model to measure the survival function from lifetime duration data. We fit a cox proportional model and Logistic regression model.
+
+{{% /callout %}}
+
+{{% callout note %}}
 
 ## Brain Cancer Data
 
 A data frame with 88 observations and 8 variables:
 
-- sex : Factor with levels “Female” and “Male”
-- diagnosis : Factor with levels “Meningioma”, “LG glioma”, “HG glioma”, and “Other”.
-- Location : factor with levels “Infratentorial” and “Supratentorial”.
-- ki : Karnofsky index.
-- gtv : Gross tumor volume, in cubic centimeters.
-- stereo : Stereotactic method factor with levels “SRS” and “SRT”.
-- status : Whether the patient is dead at the end of the study: 0=No, 1=yes.
-- time : Survival time, in months.
+- [x] sex : Factor with levels “Female” and “Male”
+- [x] diagnosis : Factor with levels “Meningioma”, “LG glioma”, “HG glioma”, and “Other”.
+- [x] Location : factor with levels “Infratentorial” and “Supratentorial”.
+- [x] ki : Karnofsky index.
+- [x] gtv : Gross tumor volume, in cubic centimeters.
+- [x] stereo : Stereotactic method factor with levels “SRS” and “SRT”.
+- [x] status : Whether the patient is dead at the end of the study: 0=No, 1=yes.
+- [x] time : Survival time, in months.
+  {{% /callout %}}
 
-# Setup
+## Setup
 
 ``` r
 library(pacman)
-p_load(tidyverse, tidymodels, ISLR2, survival, censored)
+p_load(tidyverse, tidymodels, ISLR2, survival, censored,dlookr,pubh,sjPlot,compareGroups,survminer)
+```
 
-glimpse(BrainCancer)
-#> Rows: 88
-#> Columns: 8
-#> $ sex       <fct> Female, Male, Female, Female, Male, Female, Male, Male, Fema~
-#> $ diagnosis <fct> Meningioma, HG glioma, Meningioma, LG glioma, HG glioma, Men~
-#> $ loc       <fct> Infratentorial, Supratentorial, Infratentorial, Supratentori~
-#> $ ki        <int> 90, 90, 70, 80, 90, 80, 80, 80, 70, 100, 80, 90, 90, 90, 60,~
-#> $ gtv       <dbl> 6.11, 19.35, 7.95, 7.61, 5.06, 4.82, 3.19, 12.37, 12.16, 2.5~
-#> $ stereo    <fct> SRS, SRT, SRS, SRT, SRT, SRS, SRT, SRT, SRT, SRT, SRT, SRS, ~
-#> $ status    <int> 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, ~
-#> $ time      <dbl> 57.64, 8.98, 26.46, 47.80, 6.30, 52.75, 55.80, 42.10, 34.66,~
+### take a look at the dataset
+
+``` r
+BrainCancer<-readr::read_csv("NCU_braincancer.csv")
 ```
 
 ``` r
 skimr::skim(BrainCancer)
 ```
 
-|                                                  |             |
-|:-------------------------------------------------|:------------|
-| Name                                             | BrainCancer |
-| Number of rows                                   | 88          |
-| Number of columns                                | 8           |
-| \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_   |             |
-| Column type frequency:                           |             |
-| factor                                           | 4           |
-| numeric                                          | 4           |
-| \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |             |
-| Group variables                                  | None        |
-
-<span id="tab:unnamed-chunk-2"></span>Table 1: Data summary
+<table style="width: auto;" class="table table-condensed">
+<caption>
+<span id="tab:unnamed-chunk-3"></span>Table 1: Data summary
+</caption>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Name
+</td>
+<td style="text-align:left;">
+BrainCancer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Number of rows
+</td>
+<td style="text-align:left;">
+88
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Number of columns
+</td>
+<td style="text-align:left;">
+8
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+</td>
+<td style="text-align:left;">
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Column type frequency:
+</td>
+<td style="text-align:left;">
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+factor
+</td>
+<td style="text-align:left;">
+4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+numeric
+</td>
+<td style="text-align:left;">
+4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+</td>
+<td style="text-align:left;">
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Group variables
+</td>
+<td style="text-align:left;">
+None
+</td>
+</tr>
+</tbody>
+</table>
 
 **Variable type: factor**
 
-| skim_variable | n_missing | complete_rate | ordered | n_unique | top_counts                        |
-|:--------------|----------:|--------------:|:--------|---------:|:----------------------------------|
-| sex           |         0 |          1.00 | FALSE   |        2 | Fem: 45, Mal: 43                  |
-| diagnosis     |         1 |          0.99 | FALSE   |        4 | Men: 42, HG : 22, Oth: 14, LG : 9 |
-| loc           |         0 |          1.00 | FALSE   |        2 | Sup: 69, Inf: 19                  |
-| stereo        |         0 |          1.00 | FALSE   |        2 | SRT: 65, SRS: 23                  |
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+skim_variable
+</th>
+<th style="text-align:right;">
+n_missing
+</th>
+<th style="text-align:right;">
+complete_rate
+</th>
+<th style="text-align:left;">
+ordered
+</th>
+<th style="text-align:right;">
+n_unique
+</th>
+<th style="text-align:left;">
+top_counts
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+sex
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1.00
+</td>
+<td style="text-align:left;">
+FALSE
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:left;">
+Fem: 45, Mal: 43
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+diagnosis
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.99
+</td>
+<td style="text-align:left;">
+FALSE
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:left;">
+Men: 42, HG : 22, Oth: 14, LG : 9
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+loc
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1.00
+</td>
+<td style="text-align:left;">
+FALSE
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:left;">
+Sup: 69, Inf: 19
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+stereo
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1.00
+</td>
+<td style="text-align:left;">
+FALSE
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:left;">
+SRT: 65, SRS: 23
+</td>
+</tr>
+</tbody>
+</table>
 
 **Variable type: numeric**
 
-| skim_variable | n_missing | complete_rate |  mean |    sd |    p0 |   p25 |   p50 |  p75 |   p100 | hist  |
-|:--------------|----------:|--------------:|------:|------:|------:|------:|------:|-----:|-------:|:------|
-| ki            |         0 |             1 | 81.02 | 10.51 | 40.00 | 80.00 | 80.00 | 90.0 | 100.00 | ▁▁▃▇▇ |
-| gtv           |         0 |             1 |  8.66 |  8.66 |  0.01 |  2.50 |  6.51 | 12.1 |  34.64 | ▇▃▁▁▁ |
-| status        |         0 |             1 |  0.40 |  0.49 |  0.00 |  0.00 |  0.00 |  1.0 |   1.00 | ▇▁▁▁▅ |
-| time          |         0 |             1 | 27.46 | 20.12 |  0.07 | 10.39 | 24.03 | 41.6 |  82.56 | ▇▅▅▂▁ |
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+skim_variable
+</th>
+<th style="text-align:right;">
+n_missing
+</th>
+<th style="text-align:right;">
+complete_rate
+</th>
+<th style="text-align:right;">
+mean
+</th>
+<th style="text-align:right;">
+sd
+</th>
+<th style="text-align:right;">
+p0
+</th>
+<th style="text-align:right;">
+p25
+</th>
+<th style="text-align:right;">
+p50
+</th>
+<th style="text-align:right;">
+p75
+</th>
+<th style="text-align:right;">
+p100
+</th>
+<th style="text-align:left;">
+hist
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+ki
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+81.02
+</td>
+<td style="text-align:right;">
+10.51
+</td>
+<td style="text-align:right;">
+40.00
+</td>
+<td style="text-align:right;">
+80.00
+</td>
+<td style="text-align:right;">
+80.00
+</td>
+<td style="text-align:right;">
+90.0
+</td>
+<td style="text-align:right;">
+100.00
+</td>
+<td style="text-align:left;">
+\<U+2581\>\<U+2581\>\<U+2583\>\<U+2587\>\<U+2587\>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+gtv
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+8.66
+</td>
+<td style="text-align:right;">
+8.66
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+<td style="text-align:right;">
+2.50
+</td>
+<td style="text-align:right;">
+6.51
+</td>
+<td style="text-align:right;">
+12.1
+</td>
+<td style="text-align:right;">
+34.64
+</td>
+<td style="text-align:left;">
+\<U+2587\>\<U+2583\>\<U+2581\>\<U+2581\>\<U+2581\>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+status
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.40
+</td>
+<td style="text-align:right;">
+0.49
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:right;">
+1.00
+</td>
+<td style="text-align:left;">
+\<U+2587\>\<U+2581\>\<U+2581\>\<U+2581\>\<U+2585\>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+time
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+27.46
+</td>
+<td style="text-align:right;">
+20.12
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+<td style="text-align:right;">
+10.39
+</td>
+<td style="text-align:right;">
+24.03
+</td>
+<td style="text-align:right;">
+41.6
+</td>
+<td style="text-align:right;">
+82.56
+</td>
+<td style="text-align:left;">
+\<U+2587\>\<U+2585\>\<U+2585\>\<U+2582\>\<U+2581\>
+</td>
+</tr>
+</tbody>
+</table>
 
-# Explanatory data Analysis(EDA)
-
-## mortality Rate
+## Data wrangling
 
 ``` r
 data<-BrainCancer |> 
-  mutate(brain_status=ifelse(status==1,"yes","no"))
-
-
-data|>
-  dplyr::group_by(brain_status)|> 
-  dplyr::summarize(count=n(),
-             mean=mean(gtv, na.rm = T),
-             std_dev=sd(gtv, na.rm = T),
-             median=median(gtv, na.rm = T), 
-             min=min(gtv, na.rm = T),
-             max=max(gtv, na.rm = T))|> 
- tibble::column_to_rownames(var = "brain_status") |> 
- base::as.matrix()
-#>     count      mean  std_dev median  min   max
-#> no     53  7.022075 7.753337   4.72 0.01 31.74
-#> yes    35 11.142286 9.451387  11.38 0.14 34.64
-
-#Calculate mortality rate
-print(paste('Mortality rate (%) is ',round(35/(35+53)*100,digits=2)))
-#> [1] "Mortality rate (%) is  39.77"
+  mutate(brain_status=ifelse(status==1,"dead","alive"))
+## check missing values
+colSums(is.na(data))
+#>          sex    diagnosis          loc           ki          gtv       stereo 
+#>            0            1            0            0            0            0 
+#>       status         time brain_status 
+#>            0            0            0
 ```
+
+- there is only one missing value
 
 ``` r
-blogdown::shortcode("spoiler",text="click here",.content="the Mortality rate is approximately `40%`")
+## remove the missing values
+cases<-complete.cases(data) 
+data<-data[cases,]
 ```
 
-{{% spoiler text="click here" %}}
-the Mortality rate is approximately `40%`
-{{% /spoiler %}}
-
-``` r
-library(extrafont)
-loadfonts(quiet=TRUE)
-
-iv_rates <- data |>
-  group_by(brain_status) |>
-  summarize(count = n()) |> 
-  mutate(prop = count/sum(count)) |>
-  ungroup() 
-
-plot<-iv_rates |>
-  ggplot(aes(x=brain_status, y=prop, fill=brain_status)) + 
-  geom_col(color="black",width = 0.5)+ 
-  theme(legend.position="bottom") + 
-  geom_label(aes(label=scales::percent(prop)), color="white") + 
-  labs(
-    title = "mortality ratio",
-    subtitle = "Brain Cancer Analysis",
-    y = "proportion(%)", 
-    x = "",
-    fill="status",
-    caption="B.Ncube::Data enthusiast") + 
-  scale_y_continuous(labels = scales::percent)+ 
-geom_hline(yintercept = (sum(data$status)/nrow(data)), col = "white", lty = 2) +
-  tvthemes::scale_fill_kimPossible()+
-  tvthemes::theme_theLastAirbender(title.font="Slayer",
-                                   text.font = "Slayer")+
-  theme(legend.position = 'right')
-plot
-```
-
-<img src="staticunnamed-chunk-5-1.png" width="1023.999552" style="display: block; margin: auto;" />
-
-## mortality rate by sex
-
-### Create a customised function for summarising categorical data per status
-
-``` r
-summarize_status <- function(tbl){
-  tbl %>% 
-  #group_by(occup) %>% 
-  summarise(n_died = sum(brain_status == "yes"), n_total = n()) %>%
-  ungroup() %>% 
-  mutate(pct_died = n_died / n_total) %>% 
-  arrange(desc(pct_died)) %>% 
-  mutate(low = qbeta(0.025, n_died + 5, n_total - n_died + .5),
-         high = qbeta(0.975, n_died + 5, n_total - n_died + .5),
-         pct = n_total / sum(n_total),
-         percentage=scales::percent(pct_died))
-  } 
-```
-
-### mortality rate summary per sex
-
-``` r
-data |> 
-  group_by(sex) |> 
-  summarize_status()
-#> # A tibble: 2 x 8
-#>   sex    n_died n_total pct_died   low  high   pct percentage
-#>   <fct>   <int>   <int>    <dbl> <dbl> <dbl> <dbl> <chr>     
-#> 1 Male       20      43    0.465 0.376 0.653 0.489 47%       
-#> 2 Female     15      45    0.333 0.267 0.533 0.511 33%
-```
-
-- from the dataset , `\(\frac{20}{43}\)` men died while the other 15 where woman who died
-- we can present these more visually with the graphs below
-
-<img src="staticunnamed-chunk-8-1.png" width="1023.999552" style="display: block; margin: auto;" />
-
-``` r
-library(glue)
-bind_count = function(x){
-  as_tibble(x) %>% 
-  add_count(value) %>% 
-  mutate(value = glue("{value} ({n})")) %>%
-    pull(value)
-  
-}
-```
-
-``` r
-# Scatter plot
-data %>% 
-  na.omit() %>% 
-  group_by(diagnosis = bind_count(diagnosis)) %>% 
-  summarize_status() %>% 
-  mutate(diagnosis = fct_reorder(diagnosis, pct_died)) %>% 
-  ggplot(mapping = aes(x = pct_died, y = diagnosis)) +
-  geom_point(aes(size = pct), show.legend = T) +
-  geom_errorbarh(aes(xmin = low, xmax = high), height = .3) +
-  labs(
-    x = "Percentage of patients in each category who died",
-    title = "Distribution of status by diagnosis",
-    size = "%prevalence",
-    subtitle = ""
-  ) +
-  scale_x_continuous(labels = percent) +
-  scale_size_continuous(labels = percent) +
-  theme(plot.title = element_text(hjust = 0.5))
-```
-
-<img src="staticunnamed-chunk-10-1.png" width="1023.999552" style="display: block; margin: auto;" />
-
-{{% callout note %}}
-
-It seems that cumulatively, people with **LG glioma** and **HG glioma** had high chances of death.
-
-{{% /callout %}}
+## Explanatory data Analysis(EDA)
 
 ## distribution of numeric variables
 
 ``` r
-
 # Histogram of all numeric variables
 data %>%
   keep(is.numeric) %>% 
@@ -262,31 +507,54 @@ data %>%
   ggthemes::theme_wsj()
 ```
 
-<img src="staticunnamed-chunk-11-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-6-1.png" width="1023.999552" style="display: block; margin: auto;" />
+
+## Correlations
+
+``` r
+## select only numeric values
+cor_data<-data %>%
+  keep(is.numeric)
+## create a correlation matrix
+corl<-cor(cor_data)
+corrplot::corrplot(corl,method="color",addCoef.col = "black")
+```
+
+<img src="staticunnamed-chunk-7-1.png" width="1023.999552" style="display: block; margin: auto;" />
+
+{{% callout note %}}
 
 - status is really not supposed to be numeric but rather a factor variable
 - time and gross tumor volume are all positively skewed
 - karnofsky index is as good as being a factor so i will further categorize the data
+- the correlations are not really significant given the variables at hand
+
+{{% /callout %}}
 
 ## further manipulation
 
 ``` r
 data <- data |> 
-  mutate(kan_index = ifelse(ki>=80,"index > 79","index < 80"))
+  mutate(kan_index = ifelse(ki>=80,"index>79","index<80"))
 
 data |> 
   janitor::tabyl(kan_index)
-#>   kan_index  n   percent
-#>  index < 80 20 0.2272727
-#>  index > 79 68 0.7727273
 ```
+
+<table class="huxtable" style="border-collapse: collapse; border: 0px; margin-bottom: 2em; margin-top: 2em; ; margin-left: auto; margin-right: auto;  " id="tab:unnamed-chunk-8">
+<col><col><col><tr>
+<th style="vertical-align: top; text-align: left; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0.4pt 0.4pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">kan_index</th><th style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">n</th><th style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0.4pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">percent</th></tr>
+<tr>
+<td style="vertical-align: top; text-align: left; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0pt 0.4pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">index&lt;80</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0pt 0pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">20</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0.4pt 0pt 0pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">0.23</td></tr>
+<tr>
+<td style="vertical-align: top; text-align: left; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0pt 0.4pt 0.4pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">index&gt;79</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">67</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0.4pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">0.77</td></tr>
+</table>
 
 ## comparing dependent variable with numeric variables
 
 ``` r
 subset <- data |>
   dplyr::select(gtv,time,ki,status)
-
 
 # Bring in external file for visualisations
 source('functions/visualisations.R')
@@ -306,7 +574,7 @@ plot +
   theme(legend.position = 'top') 
 ```
 
-<img src="staticunnamed-chunk-13-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-9-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
 ## categorical data
 
@@ -342,1095 +610,436 @@ plot<-iv_rates |>
 plot
 ```
 
-<img src="staticunnamed-chunk-14-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-10-1.png" width="1023.999552" style="display: block; margin: auto;" />
+
+### mortality Rate
 
 ``` r
-library(gtsummary)
-data |>
-  select(sex,diagnosis,loc,stereo,status) |> 
-  tbl_summary(
-    by = status,
-    statistic = list(
-      all_continuous() ~ "{mean} ({sd})",
-      all_categorical() ~ "{n} / {N} ({p}%)"), 
-    label = status ~ "status")|> 
-  add_p(test = all_continuous() ~ "t.test",
-        pvalue_fun = function(x) style_pvalue(x, digits = 2))|> 
-   modify_header(statistic ~ "**Test Statistic**")|>
-  bold_labels()|> 
-  modify_fmt_fun(statistic ~ style_sigfig) %>% 
-  modify_caption("**Table 1. Patient Characteristic**")  %>%
-  modify_header(label ~ "**Variable**") %>% 
-  modify_spanning_header(c("stat_1", "stat_2") ~ "**Survival Status**") %>%
-  modify_footnote(all_stat_cols() ~ "Mean (SD) or Frequency (%)") %>%
-  bold_labels() %>%
-  as_gt()
+data|>
+  dplyr::group_by(brain_status)|> 
+  dplyr::summarize(count=n(),
+             mean=mean(gtv, na.rm = T),
+             std_dev=sd(gtv, na.rm = T),
+             median=median(gtv, na.rm = T), 
+             min=min(gtv, na.rm = T),
+             max=max(gtv, na.rm = T))|> 
+ tibble::column_to_rownames(var = "brain_status") |> 
+ base::as.matrix()
+#>       count      mean  std_dev median  min   max
+#> alive    52  7.034423 7.828455   4.36 0.01 31.74
+#> dead     35 11.142286 9.451387  11.38 0.14 34.64
+
+#Calculate mortality rate
+print(paste('Mortality rate (%) is ',round(35/(35+53)*100,digits=2)))
+#> [1] "Mortality rate (%) is  39.77"
 ```
 
-<div id="otofmlnfmj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#otofmlnfmj table {
-  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+- we can view this in a plot or chart
 
-#otofmlnfmj thead, #otofmlnfmj tbody, #otofmlnfmj tfoot, #otofmlnfmj tr, #otofmlnfmj td, #otofmlnfmj th {
-  border-style: none;
-}
+``` r
+library(extrafont)
+loadfonts(quiet=TRUE)
 
-#otofmlnfmj p {
-  margin: 0;
-  padding: 0;
-}
+iv_rates <- data |>
+  group_by(brain_status) |>
+  summarize(count = n()) |> 
+  mutate(prop = count/sum(count)) |>
+  ungroup() 
 
-#otofmlnfmj .gt_table {
-  display: table;
-  border-collapse: collapse;
-  line-height: normal;
-  margin-left: auto;
-  margin-right: auto;
-  color: #333333;
-  font-size: 16px;
-  font-weight: normal;
-  font-style: normal;
-  background-color: #FFFFFF;
-  width: auto;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #A8A8A8;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #A8A8A8;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-}
+plot<-iv_rates |>
+  ggplot(aes(x=brain_status, y=prop, fill=brain_status)) + 
+  geom_col(color="black",width = 0.5)+ 
+  theme(legend.position="bottom") + 
+  geom_label(aes(label=scales::percent(prop)), color="white") + 
+  labs(
+    title = "mortality ratio",
+    subtitle = "Brain Cancer Analysis",
+    y = "proportion(%)", 
+    x = "",
+    fill="status",
+    caption="B.Ncube::Data enthusiast") + 
+  scale_y_continuous(labels = scales::percent)+ 
+geom_hline(yintercept = (sum(data$status)/nrow(data)), col = "white", lty = 2) +
+  tvthemes::scale_fill_kimPossible()+
+  tvthemes::theme_theLastAirbender(title.font="Slayer",
+                                   text.font = "Slayer")+
+  theme(legend.position = 'right')
+plot
+```
 
-#otofmlnfmj .gt_caption {
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
+<img src="staticunnamed-chunk-12-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
-#otofmlnfmj .gt_title {
-  color: #333333;
-  font-size: 125%;
-  font-weight: initial;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-color: #FFFFFF;
-  border-bottom-width: 0;
-}
+## Cancer outcome by diagnosis type
 
-#otofmlnfmj .gt_subtitle {
-  color: #333333;
-  font-size: 85%;
-  font-weight: initial;
-  padding-top: 3px;
-  padding-bottom: 5px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-top-color: #FFFFFF;
-  border-top-width: 0;
-}
-
-#otofmlnfmj .gt_heading {
-  background-color: #FFFFFF;
-  text-align: center;
-  border-bottom-color: #FFFFFF;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-}
-
-#otofmlnfmj .gt_bottom_border {
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#otofmlnfmj .gt_col_headings {
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-}
-
-#otofmlnfmj .gt_col_heading {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: normal;
-  text-transform: inherit;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: bottom;
-  padding-top: 5px;
-  padding-bottom: 6px;
-  padding-left: 5px;
-  padding-right: 5px;
-  overflow-x: hidden;
-}
-
-#otofmlnfmj .gt_column_spanner_outer {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: normal;
-  text-transform: inherit;
-  padding-top: 0;
-  padding-bottom: 0;
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
-#otofmlnfmj .gt_column_spanner_outer:first-child {
-  padding-left: 0;
-}
-
-#otofmlnfmj .gt_column_spanner_outer:last-child {
-  padding-right: 0;
-}
-
-#otofmlnfmj .gt_column_spanner {
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  vertical-align: bottom;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  overflow-x: hidden;
-  display: inline-block;
-  width: 100%;
-}
-
-#otofmlnfmj .gt_spanner_row {
-  border-bottom-style: hidden;
-}
-
-#otofmlnfmj .gt_group_heading {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: middle;
-  text-align: left;
-}
-
-#otofmlnfmj .gt_empty_group_heading {
-  padding: 0.5px;
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  vertical-align: middle;
-}
-
-#otofmlnfmj .gt_from_md > :first-child {
-  margin-top: 0;
-}
-
-#otofmlnfmj .gt_from_md > :last-child {
-  margin-bottom: 0;
-}
-
-#otofmlnfmj .gt_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  margin: 10px;
-  border-top-style: solid;
-  border-top-width: 1px;
-  border-top-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: middle;
-  overflow-x: hidden;
-}
-
-#otofmlnfmj .gt_stub {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-right-style: solid;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#otofmlnfmj .gt_stub_row_group {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-right-style: solid;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  padding-left: 5px;
-  padding-right: 5px;
-  vertical-align: top;
-}
-
-#otofmlnfmj .gt_row_group_first td {
-  border-top-width: 2px;
-}
-
-#otofmlnfmj .gt_row_group_first th {
-  border-top-width: 2px;
-}
-
-#otofmlnfmj .gt_summary_row {
-  color: #333333;
-  background-color: #FFFFFF;
-  text-transform: inherit;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#otofmlnfmj .gt_first_summary_row {
-  border-top-style: solid;
-  border-top-color: #D3D3D3;
-}
-
-#otofmlnfmj .gt_first_summary_row.thick {
-  border-top-width: 2px;
-}
-
-#otofmlnfmj .gt_last_summary_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#otofmlnfmj .gt_grand_summary_row {
-  color: #333333;
-  background-color: #FFFFFF;
-  text-transform: inherit;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#otofmlnfmj .gt_first_grand_summary_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-top-style: double;
-  border-top-width: 6px;
-  border-top-color: #D3D3D3;
-}
-
-#otofmlnfmj .gt_last_grand_summary_row_top {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-style: double;
-  border-bottom-width: 6px;
-  border-bottom-color: #D3D3D3;
-}
-
-#otofmlnfmj .gt_striped {
-  background-color: rgba(128, 128, 128, 0.05);
-}
-
-#otofmlnfmj .gt_table_body {
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#otofmlnfmj .gt_footnotes {
-  color: #333333;
-  background-color: #FFFFFF;
-  border-bottom-style: none;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-}
-
-#otofmlnfmj .gt_footnote {
-  margin: 0px;
-  font-size: 90%;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#otofmlnfmj .gt_sourcenotes {
-  color: #333333;
-  background-color: #FFFFFF;
-  border-bottom-style: none;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-}
-
-#otofmlnfmj .gt_sourcenote {
-  font-size: 90%;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#otofmlnfmj .gt_left {
-  text-align: left;
-}
-
-#otofmlnfmj .gt_center {
-  text-align: center;
-}
-
-#otofmlnfmj .gt_right {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-#otofmlnfmj .gt_font_normal {
-  font-weight: normal;
-}
-
-#otofmlnfmj .gt_font_bold {
-  font-weight: bold;
-}
-
-#otofmlnfmj .gt_font_italic {
-  font-style: italic;
-}
-
-#otofmlnfmj .gt_super {
-  font-size: 65%;
-}
-
-#otofmlnfmj .gt_footnote_marks {
-  font-size: 75%;
-  vertical-align: 0.4em;
-  position: initial;
-}
-
-#otofmlnfmj .gt_asterisk {
-  font-size: 100%;
-  vertical-align: 0;
-}
-
-#otofmlnfmj .gt_indent_1 {
-  text-indent: 5px;
-}
-
-#otofmlnfmj .gt_indent_2 {
-  text-indent: 10px;
-}
-
-#otofmlnfmj .gt_indent_3 {
-  text-indent: 15px;
-}
-
-#otofmlnfmj .gt_indent_4 {
-  text-indent: 20px;
-}
-
-#otofmlnfmj .gt_indent_5 {
-  text-indent: 25px;
-}
-</style>
-<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
-  <caption>(#tab:unnamed-chunk-15)<strong>Table 1. Patient Characteristic</strong></caption>
-  <thead>
-    
-    <tr class="gt_col_headings gt_spanner_row">
-      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;Variable&lt;/strong&gt;"><strong>Variable</strong></th>
-      <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="2" scope="colgroup" id="&lt;strong&gt;Survival Status&lt;/strong&gt;">
-        <span class="gt_column_spanner"><strong>Survival Status</strong></span>
-      </th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;Test Statistic&lt;/strong&gt;"><strong>Test Statistic</strong></th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;p-value&lt;/strong&gt;&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;2&lt;/sup&gt;&lt;/span&gt;"><strong>p-value</strong><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>2</sup></span></th>
-    </tr>
-    <tr class="gt_col_headings">
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;0&lt;/strong&gt;, N = 53&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;1&lt;/sup&gt;&lt;/span&gt;"><strong>0</strong>, N = 53<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span></th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;1&lt;/strong&gt;, N = 35&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;1&lt;/sup&gt;&lt;/span&gt;"><strong>1</strong>, N = 35<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span></th>
-    </tr>
-  </thead>
-  <tbody class="gt_table_body">
-    <tr><td headers="label" class="gt_row gt_left" style="font-weight: bold;">sex</td>
-<td headers="stat_1" class="gt_row gt_center"></td>
-<td headers="stat_2" class="gt_row gt_center"></td>
-<td headers="statistic" class="gt_row gt_center">1.6</td>
-<td headers="p.value" class="gt_row gt_center">0.21</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Female</td>
-<td headers="stat_1" class="gt_row gt_center">30 / 53 (57%)</td>
-<td headers="stat_2" class="gt_row gt_center">15 / 35 (43%)</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Male</td>
-<td headers="stat_1" class="gt_row gt_center">23 / 53 (43%)</td>
-<td headers="stat_2" class="gt_row gt_center">20 / 35 (57%)</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-    <tr><td headers="label" class="gt_row gt_left" style="font-weight: bold;">diagnosis</td>
-<td headers="stat_1" class="gt_row gt_center"></td>
-<td headers="stat_2" class="gt_row gt_center"></td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"><0.001</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Meningioma</td>
-<td headers="stat_1" class="gt_row gt_center">33 / 52 (63%)</td>
-<td headers="stat_2" class="gt_row gt_center">9 / 35 (26%)</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    LG glioma</td>
-<td headers="stat_1" class="gt_row gt_center">5 / 52 (9.6%)</td>
-<td headers="stat_2" class="gt_row gt_center">4 / 35 (11%)</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    HG glioma</td>
-<td headers="stat_1" class="gt_row gt_center">5 / 52 (9.6%)</td>
-<td headers="stat_2" class="gt_row gt_center">17 / 35 (49%)</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Other</td>
-<td headers="stat_1" class="gt_row gt_center">9 / 52 (17%)</td>
-<td headers="stat_2" class="gt_row gt_center">5 / 35 (14%)</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
-<td headers="stat_1" class="gt_row gt_center">1</td>
-<td headers="stat_2" class="gt_row gt_center">0</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-    <tr><td headers="label" class="gt_row gt_left" style="font-weight: bold;">loc</td>
-<td headers="stat_1" class="gt_row gt_center"></td>
-<td headers="stat_2" class="gt_row gt_center"></td>
-<td headers="statistic" class="gt_row gt_center">3.5</td>
-<td headers="p.value" class="gt_row gt_center">0.060</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Infratentorial</td>
-<td headers="stat_1" class="gt_row gt_center">15 / 53 (28%)</td>
-<td headers="stat_2" class="gt_row gt_center">4 / 35 (11%)</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Supratentorial</td>
-<td headers="stat_1" class="gt_row gt_center">38 / 53 (72%)</td>
-<td headers="stat_2" class="gt_row gt_center">31 / 35 (89%)</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-    <tr><td headers="label" class="gt_row gt_left" style="font-weight: bold;">stereo</td>
-<td headers="stat_1" class="gt_row gt_center"></td>
-<td headers="stat_2" class="gt_row gt_center"></td>
-<td headers="statistic" class="gt_row gt_center">4.2</td>
-<td headers="p.value" class="gt_row gt_center">0.040</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    SRS</td>
-<td headers="stat_1" class="gt_row gt_center">18 / 53 (34%)</td>
-<td headers="stat_2" class="gt_row gt_center">5 / 35 (14%)</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    SRT</td>
-<td headers="stat_1" class="gt_row gt_center">35 / 53 (66%)</td>
-<td headers="stat_2" class="gt_row gt_center">30 / 35 (86%)</td>
-<td headers="statistic" class="gt_row gt_center"></td>
-<td headers="p.value" class="gt_row gt_center"></td></tr>
-  </tbody>
+``` r
+ggplot(data) +                                             
+  aes(x=brain_status) +                                 
+  aes(fill=diagnosis) +                                   
+  geom_bar(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..]),   
+      position="dodge",                                   
+      color="black") +                                  
+    tvthemes::scale_color_kimPossible() +   
+    tvthemes::scale_fill_avatar()  +
+  geom_text(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..],           
+     label=scales::percent(..count../tapply(..count.., ..x.. ,sum)[..x..]) ),    
+     stat="count",                              
+     position=position_dodge(1.0),                         
+     vjust=-0.5, 
+     size=3) + 
+  scale_y_continuous(limits=c(0,100)) +                    
+  scale_y_continuous(labels = scales::percent) +     
   
-  <tfoot class="gt_footnotes">
-    <tr>
-      <td class="gt_footnote" colspan="5"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span> Mean (SD) or Frequency (%)</td>
-    </tr>
-    <tr>
-      <td class="gt_footnote" colspan="5"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>2</sup></span> Pearson’s Chi-squared test; Fisher’s exact test</td>
-    </tr>
-  </tfoot>
-</table>
-</div>
+ ggtitle("Cancer Outcome, diagnosis type") +                                  # title and axis labels=
+     xlab("Diagnosis") +  
+     ylab("% of Group") + 
+  theme_minimal()   
+```
 
+<img src="staticunnamed-chunk-13-1.png" width="1023.999552" style="display: block; margin: auto;" />
+{{% callout note %}}
++ a greater percent of those died where diagnosed `HG glioma`
++ lets see the values in the following table
+{{% /callout %}}
+
+``` r
+sjt.xtab(data$diagnosis,data$brain_status,      
+         show.row.prc=TRUE,                        
+         show.summary=FALSE,                                        
+         title="Cross Tab Diagnosis x Cancer") 
+```
+
+<table style="border-collapse:collapse; border:none;">
+<caption style="font-weight: bold; text-align:left;">
+Cross Tab Diagnosis x Cancer
+</caption>
+<tr>
+<th style="border-top:double; text-align:center; font-style:italic; font-weight:normal; border-bottom:1px solid;" rowspan="2">
+diagnosis
+</th>
+<th style="border-top:double; text-align:center; font-style:italic; font-weight:normal;" colspan="2">
+brain_status
+</th>
+<th style="border-top:double; text-align:center; font-style:italic; font-weight:normal; font-weight:bolder; font-style:italic; border-bottom:1px solid; " rowspan="2">
+Total
+</th>
+</tr>
+<tr>
+<td style="border-bottom:1px solid; text-align:center; padding:0.2cm;">
+alive
+</td>
+<td style="border-bottom:1px solid; text-align:center; padding:0.2cm;">
+dead
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm;  text-align:left; vertical-align:middle;">
+Meningioma
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+<span style="color:black;">33</span><br><span style="color:#333399;">78.6 %</span>
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+<span style="color:black;">9</span><br><span style="color:#333399;">21.4 %</span>
+</td>
+<td style="padding:0.2cm; text-align:center;  ">
+<span style="color:black;">42</span><br><span style="color:#333399;">100 %</span>
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm;  text-align:left; vertical-align:middle;">
+LG glioma
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+<span style="color:black;">5</span><br><span style="color:#333399;">55.6 %</span>
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+<span style="color:black;">4</span><br><span style="color:#333399;">44.4 %</span>
+</td>
+<td style="padding:0.2cm; text-align:center;  ">
+<span style="color:black;">9</span><br><span style="color:#333399;">100 %</span>
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm;  text-align:left; vertical-align:middle;">
+HG glioma
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+<span style="color:black;">5</span><br><span style="color:#333399;">22.7 %</span>
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+<span style="color:black;">17</span><br><span style="color:#333399;">77.3 %</span>
+</td>
+<td style="padding:0.2cm; text-align:center;  ">
+<span style="color:black;">22</span><br><span style="color:#333399;">100 %</span>
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm;  text-align:left; vertical-align:middle;">
+Other
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+<span style="color:black;">9</span><br><span style="color:#333399;">64.3 %</span>
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+<span style="color:black;">5</span><br><span style="color:#333399;">35.7 %</span>
+</td>
+<td style="padding:0.2cm; text-align:center;  ">
+<span style="color:black;">14</span><br><span style="color:#333399;">100 %</span>
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm;  border-bottom:double; font-weight:bolder; font-style:italic; text-align:left; vertical-align:middle;">
+Total
+</td>
+<td style="padding:0.2cm; text-align:center;   border-bottom:double;">
+<span style="color:black;">52</span><br><span style="color:#333399;">59.8 %</span>
+</td>
+<td style="padding:0.2cm; text-align:center;   border-bottom:double;">
+<span style="color:black;">35</span><br><span style="color:#333399;">40.2 %</span>
+</td>
+<td style="padding:0.2cm; text-align:center;   border-bottom:double;">
+<span style="color:black;">87</span><br><span style="color:#333399;">100 %</span>
+</td>
+</tr>
+</table>
+
+## mortality rate by sex
+
+### Create a customised function for summarising categorical data per status
+
+``` r
+summarize_status <- function(tbl){tbl %>% 
+  summarise(n_died = sum(brain_status == "yes"),
+            n_total = n()) %>%
+  ungroup() %>% 
+  mutate(pct_died = n_died / n_total) %>% 
+  arrange(desc(pct_died)) %>% 
+  mutate(low = qbeta(0.025, n_died + 5, n_total - n_died + .5),
+         high = qbeta(0.975, n_died + 5, n_total - n_died + .5),
+         pct = n_total / sum(n_total),
+         percentage=scales::percent(pct_died))
+  } 
+```
+
+### mortality rate summary per sex
+
+``` r
+data |> 
+  group_by(sex) |> 
+  summarize_status()
+```
+
+<table class="huxtable" style="border-collapse: collapse; border: 0px; margin-bottom: 2em; margin-top: 2em; ; margin-left: auto; margin-right: auto;  " id="tab:unnamed-chunk-16">
+<col><col><col><col><col><col><col><col><tr>
+<th style="vertical-align: top; text-align: left; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0.4pt 0.4pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">sex</th><th style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">n_died</th><th style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">n_total</th><th style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">pct_died</th><th style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">low</th><th style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">high</th><th style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">pct</th><th style="vertical-align: top; text-align: left; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0.4pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: bold;">percentage</th></tr>
+<tr>
+<td style="vertical-align: top; text-align: left; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0pt 0.4pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">Female</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0pt 0pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">0</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0pt 0pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">45</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0pt 0pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">0</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0pt 0pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">0.0336</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0pt 0pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">0.194</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0pt 0pt 0pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">0.517</td><td style="vertical-align: top; text-align: left; white-space: normal; border-style: solid solid solid solid; border-width: 0.4pt 0.4pt 0pt 0pt;    padding: 6pt 6pt 6pt 6pt; background-color: rgb(242, 242, 242); font-weight: normal;">0%</td></tr>
+<tr>
+<td style="vertical-align: top; text-align: left; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0pt 0.4pt 0.4pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">Male</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">0</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">42</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">0</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">0.0358</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">0.206</td><td style="vertical-align: top; text-align: right; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">0.483</td><td style="vertical-align: top; text-align: left; white-space: normal; border-style: solid solid solid solid; border-width: 0pt 0.4pt 0.4pt 0pt;    padding: 6pt 6pt 6pt 6pt; font-weight: normal;">0%</td></tr>
+</table>
+
+{{% callout note %}}
++ from the dataset , `\(\frac{20}{43}\)` men died while the other 15 where woman who died
++ we can present these more visually with the graphs below
+{{% /callout %}}
+
+<img src="staticunnamed-chunk-17-1.png" width="1023.999552" style="display: block; margin: auto;" />
+
+{{% callout note %}}
++ mortality is greater in males than it is in females
++ the white dashed line indicate the overal mortality rate
+{{% /callout %}}
+
+## Outcome by diagnosis faceted by sex
+
+``` r
+ggplot(data) +                             # data to use 
+  aes(x=brain_status) +                                        # x = predictor  (factor) 
+  aes(fill=diagnosis) +                                         # fill = outcome (factor)  
+  geom_bar( position="dodge",                                        # side-by-side  
+       color="black") +                                                  # choose color of bar borders 
+    tvthemes::scale_color_kimPossible() +       # choose colors of bars 
+    tvthemes::scale_fill_avatar()  +   # bars 
+  geom_text(aes(label=after_stat(count)),                    # required  
+     stat='count',                                           # required 
+     position=position_dodge(1.0),                           # required for centering  
+     vjust= -0.5, 
+     size=3) + 
+   scale_x_discrete(limits = rev) +                                       # reverse order to 0 cups first 
+   # FORCE y-axis ticks 
+  facet_grid(~ sex)  +                                              # Strata in 1 row 
+  ggtitle("Cancer Outcome, diagnosis type\nStratified") +           # title and axis labels 
+  xlab("") +  
+  ylab("Count") + 
+  theme_bw() + 
+  theme(legend.title=element_blank()) + 
+  theme(legend.text=element_text(color="black", size=6)) + 
+  theme(legend.position="right") 
+```
+
+<img src="staticunnamed-chunk-18-1.png" width="1023.999552" style="display: block; margin: auto;" />
++ Meningioma affects more women than it affects men.
++ both men and women diagnosed with HG glioma are more likely to die
+
+## is there any association between diagnosis and cancer outcome
+
+``` r
+data %>% contingency(brain_status ~ diagnosis) 
+#>             Outcome
+#> Predictor    dead alive
+#>   Other         5     9
+#>   HG glioma    17     5
+#>   LG glioma     4     5
+#>   Meningioma    9    33
+#> 
+#>              Outcome +    Outcome -      Total                 Inc risk *
+#> Exposed +            5            4          9     55.56 (21.20 to 86.30)
+#> Exposed -           17            9         26     65.38 (44.33 to 82.79)
+#> Total               22           13         35     62.86 (44.92 to 78.53)
+#> 
+#> Point estimates and 95% CIs:
+#> -------------------------------------------------------------------
+#> Inc risk ratio                                 0.85 (0.44, 1.62)
+#> Inc odds ratio                                 0.66 (0.14, 3.10)
+#> Attrib risk in the exposed *                   -9.83 (-47.09, 27.43)
+#> Attrib fraction in the exposed (%)            -17.69 (-124.96, 38.43)
+#> Attrib risk in the population *                -2.53 (-26.83, 21.78)
+#> Attrib fraction in the population (%)         -4.02 (-20.73, 10.38)
+#> -------------------------------------------------------------------
+#> Yates corrected chi2 test that OR = 1: chi2(1) = 0.016 Pr>chi2 = 0.900
+#> Fisher exact test that OR = 1: Pr>chi2 = 0.698
+#>  Wald confidence limits
+#>  CI: confidence interval
+#>  * Outcomes per 100 population units 
+#> 
+#> 
+#> 	Fisher's Exact Test for Count Data
+#> 
+#> data:  dat
+#> p-value = 0.0001994
+#> alternative hypothesis: two.sided
+```
+
+{{% callout note %}}
 **Comments**
++ the outcome is a result of a `fisher's exact test` for association
 + the plimenary suggest that at 5% level of significance ,diagnosis( Meningioma , LG glioma ,HG glioma and other diagnostics) and stereo variable are significantly associated with survival of patients.
+{{% /callout %}}
+
+### Bivarate relationships for all variables
 
 ``` r
-data |>
-  select(gtv,time,sex) |> 
-  tbl_summary(
-    by = sex,
-    statistic = list(
-      all_continuous() ~ "{mean} ({sd})",
-      all_categorical() ~ "{n} / {N} ({p}%)"), 
-    label = sex ~ "sex")|> 
-  add_p(test = all_continuous() ~ "t.test",
-        pvalue_fun = function(x) style_pvalue(x, digits = 2))|> 
-   modify_header(statistic ~ "**Test Statistic**")|>
-  bold_labels()|> 
-  modify_fmt_fun(statistic ~ style_sigfig) %>% 
-  modify_caption("**Table 1. Patient Characteristic**")  %>%
-  modify_header(label ~ "**Variable**") %>% 
-  modify_spanning_header(c("stat_1", "stat_2") ~ "**Survival Status**") %>%
-  modify_footnote(all_stat_cols() ~ "Mean (SD) or Frequency (%)") %>%
-  bold_labels() %>%
-  as_gt()
+results <- compareGroups(brain_status ~ diagnosis+ki+sex+loc+stereo+gtv, data = data) 
+results
+#> 
+#> 
+#> -------- Summary of results by groups of 'brain_status'---------
+#> 
+#> 
+#>   var       N  p.value  method            selection
+#> 1 diagnosis 87 <0.001** categorical       ALL      
+#> 2 ki        87 0.023**  continuous normal ALL      
+#> 3 sex       87 0.255    categorical       ALL      
+#> 4 loc       87 0.096*   categorical       ALL      
+#> 5 stereo    87 0.063*   categorical       ALL      
+#> 6 gtv       87 0.037**  continuous normal ALL      
+#> -----
+#> Signif. codes:  0 '**' 0.05 '*' 0.1 ' ' 1
 ```
 
-<div id="aupwirtwtf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#aupwirtwtf table {
-  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-#aupwirtwtf thead, #aupwirtwtf tbody, #aupwirtwtf tfoot, #aupwirtwtf tr, #aupwirtwtf td, #aupwirtwtf th {
-  border-style: none;
-}
-
-#aupwirtwtf p {
-  margin: 0;
-  padding: 0;
-}
-
-#aupwirtwtf .gt_table {
-  display: table;
-  border-collapse: collapse;
-  line-height: normal;
-  margin-left: auto;
-  margin-right: auto;
-  color: #333333;
-  font-size: 16px;
-  font-weight: normal;
-  font-style: normal;
-  background-color: #FFFFFF;
-  width: auto;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #A8A8A8;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #A8A8A8;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_caption {
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
-#aupwirtwtf .gt_title {
-  color: #333333;
-  font-size: 125%;
-  font-weight: initial;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-color: #FFFFFF;
-  border-bottom-width: 0;
-}
-
-#aupwirtwtf .gt_subtitle {
-  color: #333333;
-  font-size: 85%;
-  font-weight: initial;
-  padding-top: 3px;
-  padding-bottom: 5px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-top-color: #FFFFFF;
-  border-top-width: 0;
-}
-
-#aupwirtwtf .gt_heading {
-  background-color: #FFFFFF;
-  text-align: center;
-  border-bottom-color: #FFFFFF;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_bottom_border {
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_col_headings {
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_col_heading {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: normal;
-  text-transform: inherit;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: bottom;
-  padding-top: 5px;
-  padding-bottom: 6px;
-  padding-left: 5px;
-  padding-right: 5px;
-  overflow-x: hidden;
-}
-
-#aupwirtwtf .gt_column_spanner_outer {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: normal;
-  text-transform: inherit;
-  padding-top: 0;
-  padding-bottom: 0;
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
-#aupwirtwtf .gt_column_spanner_outer:first-child {
-  padding-left: 0;
-}
-
-#aupwirtwtf .gt_column_spanner_outer:last-child {
-  padding-right: 0;
-}
-
-#aupwirtwtf .gt_column_spanner {
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  vertical-align: bottom;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  overflow-x: hidden;
-  display: inline-block;
-  width: 100%;
-}
-
-#aupwirtwtf .gt_spanner_row {
-  border-bottom-style: hidden;
-}
-
-#aupwirtwtf .gt_group_heading {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: middle;
-  text-align: left;
-}
-
-#aupwirtwtf .gt_empty_group_heading {
-  padding: 0.5px;
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  vertical-align: middle;
-}
-
-#aupwirtwtf .gt_from_md > :first-child {
-  margin-top: 0;
-}
-
-#aupwirtwtf .gt_from_md > :last-child {
-  margin-bottom: 0;
-}
-
-#aupwirtwtf .gt_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  margin: 10px;
-  border-top-style: solid;
-  border-top-width: 1px;
-  border-top-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: middle;
-  overflow-x: hidden;
-}
-
-#aupwirtwtf .gt_stub {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-right-style: solid;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#aupwirtwtf .gt_stub_row_group {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-right-style: solid;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  padding-left: 5px;
-  padding-right: 5px;
-  vertical-align: top;
-}
-
-#aupwirtwtf .gt_row_group_first td {
-  border-top-width: 2px;
-}
-
-#aupwirtwtf .gt_row_group_first th {
-  border-top-width: 2px;
-}
-
-#aupwirtwtf .gt_summary_row {
-  color: #333333;
-  background-color: #FFFFFF;
-  text-transform: inherit;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#aupwirtwtf .gt_first_summary_row {
-  border-top-style: solid;
-  border-top-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_first_summary_row.thick {
-  border-top-width: 2px;
-}
-
-#aupwirtwtf .gt_last_summary_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_grand_summary_row {
-  color: #333333;
-  background-color: #FFFFFF;
-  text-transform: inherit;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#aupwirtwtf .gt_first_grand_summary_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-top-style: double;
-  border-top-width: 6px;
-  border-top-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_last_grand_summary_row_top {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-style: double;
-  border-bottom-width: 6px;
-  border-bottom-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_striped {
-  background-color: rgba(128, 128, 128, 0.05);
-}
-
-#aupwirtwtf .gt_table_body {
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_footnotes {
-  color: #333333;
-  background-color: #FFFFFF;
-  border-bottom-style: none;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_footnote {
-  margin: 0px;
-  font-size: 90%;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#aupwirtwtf .gt_sourcenotes {
-  color: #333333;
-  background-color: #FFFFFF;
-  border-bottom-style: none;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-}
-
-#aupwirtwtf .gt_sourcenote {
-  font-size: 90%;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#aupwirtwtf .gt_left {
-  text-align: left;
-}
-
-#aupwirtwtf .gt_center {
-  text-align: center;
-}
-
-#aupwirtwtf .gt_right {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-#aupwirtwtf .gt_font_normal {
-  font-weight: normal;
-}
-
-#aupwirtwtf .gt_font_bold {
-  font-weight: bold;
-}
-
-#aupwirtwtf .gt_font_italic {
-  font-style: italic;
-}
-
-#aupwirtwtf .gt_super {
-  font-size: 65%;
-}
-
-#aupwirtwtf .gt_footnote_marks {
-  font-size: 75%;
-  vertical-align: 0.4em;
-  position: initial;
-}
-
-#aupwirtwtf .gt_asterisk {
-  font-size: 100%;
-  vertical-align: 0;
-}
-
-#aupwirtwtf .gt_indent_1 {
-  text-indent: 5px;
-}
-
-#aupwirtwtf .gt_indent_2 {
-  text-indent: 10px;
-}
-
-#aupwirtwtf .gt_indent_3 {
-  text-indent: 15px;
-}
-
-#aupwirtwtf .gt_indent_4 {
-  text-indent: 20px;
-}
-
-#aupwirtwtf .gt_indent_5 {
-  text-indent: 25px;
-}
-</style>
-<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
-  <caption>(#tab:unnamed-chunk-16)<strong>Table 1. Patient Characteristic</strong></caption>
-  <thead>
-    
-    <tr class="gt_col_headings gt_spanner_row">
-      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;Variable&lt;/strong&gt;"><strong>Variable</strong></th>
-      <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="2" scope="colgroup" id="&lt;strong&gt;Survival Status&lt;/strong&gt;">
-        <span class="gt_column_spanner"><strong>Survival Status</strong></span>
-      </th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;Test Statistic&lt;/strong&gt;"><strong>Test Statistic</strong></th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1" scope="col" id="&lt;strong&gt;p-value&lt;/strong&gt;&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;2&lt;/sup&gt;&lt;/span&gt;"><strong>p-value</strong><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>2</sup></span></th>
-    </tr>
-    <tr class="gt_col_headings">
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;Female&lt;/strong&gt;, N = 45&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;1&lt;/sup&gt;&lt;/span&gt;"><strong>Female</strong>, N = 45<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span></th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="&lt;strong&gt;Male&lt;/strong&gt;, N = 43&lt;span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;&gt;&lt;sup&gt;1&lt;/sup&gt;&lt;/span&gt;"><strong>Male</strong>, N = 43<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span></th>
-    </tr>
-  </thead>
-  <tbody class="gt_table_body">
-    <tr><td headers="label" class="gt_row gt_left" style="font-weight: bold;">gtv</td>
-<td headers="stat_1" class="gt_row gt_center">8 (7)</td>
-<td headers="stat_2" class="gt_row gt_center">10 (10)</td>
-<td headers="statistic" class="gt_row gt_center">-1.1</td>
-<td headers="p.value" class="gt_row gt_center">0.26</td></tr>
-    <tr><td headers="label" class="gt_row gt_left" style="font-weight: bold;">time</td>
-<td headers="stat_1" class="gt_row gt_center">28 (20)</td>
-<td headers="stat_2" class="gt_row gt_center">27 (21)</td>
-<td headers="statistic" class="gt_row gt_center">0.31</td>
-<td headers="p.value" class="gt_row gt_center">0.76</td></tr>
-  </tbody>
-  
-  <tfoot class="gt_footnotes">
-    <tr>
-      <td class="gt_footnote" colspan="5"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span> Mean (SD) or Frequency (%)</td>
-    </tr>
-    <tr>
-      <td class="gt_footnote" colspan="5"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>2</sup></span> Welch Two Sample t-test</td>
-    </tr>
-  </tfoot>
-</table>
-</div>
-
-- the *t.test* suggest that there is no significant difference in mean survival time and gtv between sex.
-
-# Kaplan-Meier survival curves.
+{{% callout note %}}
++ the above results show the relationship between the cancer outcome and patient characteristics
++ the p-values correspond to `chi-squared test` for categorical data and `t.test` for numeric data
++ diagnosis as mentioned in previous results is associated with cancer outcome.
++ Gross tumor volume and kanrfsky index have p-values less than 5% implying there is significant mean differences for these values per each outcome category
+{{% /callout %}}
 
 ``` r
-library(survminer)
+readytable <- createTable(results, show.ratio=TRUE, show.p.overall = FALSE)       
+print(readytable, header.labels = c(p.ratio = "p-value"))      
+#> 
+#> --------Summary descriptives table by 'brain_status'---------
+#> 
+#> ___________________________________________________________________ 
+#>                       alive       dead            OR        p-value 
+#>                       N=52        N=35                              
+#> ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯ 
+#> diagnosis:                                                          
+#>     Meningioma     33 (63.5%)   9 (25.7%)        Ref.        Ref.   
+#>     LG glioma       5 (9.62%)   4 (11.4%)  2.87 [0.58;13.7]  0.191  
+#>     HG glioma       5 (9.62%)  17 (48.6%)  11.6 [3.55;45.2] <0.001  
+#>     Other           9 (17.3%)   5 (14.3%)  2.02 [0.50;7.71]  0.314  
+#> ki                 83.1 (9.61) 77.7 (11.1) 0.95 [0.91;0.99]  0.025  
+#> sex:                                                                
+#>     Female         30 (57.7%)  15 (42.9%)        Ref.        Ref.   
+#>     Male           22 (42.3%)  20 (57.1%)  1.80 [0.76;4.38]  0.185  
+#> loc:                                                                
+#>     Infratentorial 15 (28.8%)   4 (11.4%)        Ref.        Ref.   
+#>     Supratentorial 37 (71.2%)  31 (88.6%)  3.03 [0.97;11.9]  0.057  
+#> stereo:                                                             
+#>     SRS            18 (34.6%)   5 (14.3%)        Ref.        Ref.   
+#>     SRT            34 (65.4%)  30 (85.7%)  3.08 [1.07;10.5]  0.037  
+#> gtv                7.03 (7.83) 11.1 (9.45) 1.06 [1.00;1.11]  0.036  
+#> ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+```
+
+{{% callout note %}}
++ the extended output shows more significant categories that determine cancer outcome
++ LG glioma has is the most significant category associated with cancer outcome since its p-value value is `p<0.001` which is less than 5%
++ the same applies for `stereo:SRT`
+{{% /callout %}}
+
+## extended Analysis
+
+``` r
+library(glue)
+bind_count = function(x){
+  as_tibble(x) %>% 
+  add_count(value) %>% 
+  mutate(value = glue("{value} ({n})")) %>%
+    pull(value)
+  
+}
+```
+
+``` r
+# Scatter plot
+data %>% 
+  na.omit() %>% 
+  group_by(diagnosis = bind_count(diagnosis)) %>% 
+  summarize_status() %>% 
+  mutate(diagnosis = fct_reorder(diagnosis, pct_died)) %>% 
+  ggplot(mapping = aes(x = pct_died, y = diagnosis)) +
+  geom_point(aes(size = pct), show.legend = T) +
+  geom_errorbarh(aes(xmin = low, xmax = high), height = .3) +
+  labs(
+    x = "Percentage of patients in each category who died",
+    title = "Distribution of status by diagnosis",
+    size = "%prevalence",
+    subtitle = ""
+  ) +
+  scale_x_continuous(labels = percent) +
+  scale_size_continuous(labels = percent) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+<img src="staticunnamed-chunk-23-1.png" width="1023.999552" style="display: block; margin: auto;" />
+
+{{% callout note %}}
+
+It can also be noted that cumulatively, people with **LG glioma** and **HG glioma** had high chances of death.
+
+{{% /callout %}}
+
+## Survival Analysis.
+
+``` r
 fit <- survfit(Surv(time, status) ~ sex, data = data)
 # Access to the sort summary table
 summary(fit)$table
 #>            records n.max n.start events    rmean se(rmean) median 0.95LCL
 #> sex=Female      45    45      45     15 53.15313  5.645267  51.02   46.16
-#> sex=Male        43    43      43     20 46.28717  5.656114  31.25   20.69
+#> sex=Male        42    42      42     20 45.20122  5.732211  31.25   20.69
 #>            0.95UCL
 #> sex=Female      NA
 #> sex=Male        NA
@@ -1461,28 +1070,43 @@ ggsurvplot(fit, data = data,
 )
 ```
 
-<img src="staticunnamed-chunk-17-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-24-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
-- females tend to survive longer than men
-- the difference in survival time is not statistically significant at 5% level of significance
+{{% callout note %}}
++ females tend to survive longer than men
++ the difference in survival time is not statistically significant at 5% level of significance
+{{% /callout %}}
 
 ## difference in survival per diagnosis
 
-<img src="staticunnamed-chunk-18-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-25-1.png" width="1023.999552" style="display: block; margin: auto;" />
+
+{{% callout note %}}
++ Meningioma patients have a longer survival time as compared to other patients
++ there is significant difference in survival times between patients of different diagnosis type
+at 5% level of significance
+
+- the median survival times for `LG glioma, HG glioma, and Other` are approximately 49,11 and 29 months respectively .
+  {{% /callout %}}
 
 ## difference in survival per Stereotactic
 
-<img src="staticunnamed-chunk-19-1.png" width="1023.999552" style="display: block; margin: auto;" />
+<img src="staticunnamed-chunk-26-1.png" width="1023.999552" style="display: block; margin: auto;" />
 
-- those with location at supratentorial have a longer survival time as compared to their counterparts
-- the difference in survival time is rather not statistically significant
+{{% callout note %}}
++ those with location at supratentorial have a longer survival time as compared to their counterparts
++ the difference in survival time is rather not statistically significant
+{{% /callout %}}
 
-# Now lets fit a model
+## Now lets fit a model
 
-## Logistic regression
+### Logistic regression
 
 ``` r
 source(file = "R/helper.R")
+data<- data |> 
+  select(-brain_status)
+
 data$status<-as.factor(data$status)
 
 lr_mod <- parsnip::logistic_reg()|> 
@@ -1500,22 +1124,18 @@ model %>%
 #> stats::glm(formula = status ~ . - time, family = stats::binomial, 
 #>     data = data)
 #> 
-#> Deviance Residuals: 
-#>     Min       1Q   Median       3Q      Max  
-#> -3.0935  -0.7025   0.4192   0.7665   2.3333  
-#> 
 #> Coefficients:
-#>                     Estimate Std. Error z value Pr(>|z|)    
-#> (Intercept)         -5.36393    3.50137  -1.532 0.125535    
-#> sexMale             -0.30110    0.56563  -0.532 0.594500    
-#> diagnosisLG glioma  -1.14990    0.84737  -1.357 0.174777    
-#> diagnosisHG glioma  -2.64083    0.73785  -3.579 0.000345 ***
-#> diagnosisOther      -1.01974    0.90625  -1.125 0.260492    
-#> locSupratentorial   -0.96505    0.89706  -1.076 0.282021    
-#> ki                   0.11264    0.05147   2.189 0.028630 *  
-#> gtv                 -0.03413    0.03468  -0.984 0.325042    
-#> stereoSRT           -0.34450    0.73961  -0.466 0.641369    
-#> kan_indexindex > 79 -1.05054    1.08104  -0.972 0.331158    
+#>                    Estimate Std. Error z value Pr(>|z|)    
+#> (Intercept)         5.36393    3.50137   1.532 0.125535    
+#> sexMale             0.30110    0.56563   0.532 0.594500    
+#> diagnosisLG glioma  1.14990    0.84737   1.357 0.174777    
+#> diagnosisHG glioma  2.64083    0.73785   3.579 0.000345 ***
+#> diagnosisOther      1.01974    0.90625   1.125 0.260492    
+#> locSupratentorial   0.96505    0.89706   1.076 0.282021    
+#> ki                 -0.11264    0.05147  -2.189 0.028630 *  
+#> gtv                 0.03413    0.03468   0.984 0.325042    
+#> stereoSRT           0.34450    0.73961   0.466 0.641369    
+#> kan_indexindex>79   1.05054    1.08104   0.972 0.331158    
 #> ---
 #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 #> 
@@ -1540,11 +1160,11 @@ summary(stepmodel_logit)
 #> 
 #> Coefficients:
 #>                    Estimate Std. Error z value Pr(>|z|)    
-#> (Intercept)        -4.81278    2.30775  -2.085  0.03703 *  
-#> diagnosisLG glioma -1.39942    0.80736  -1.733  0.08304 .  
-#> diagnosisHG glioma -2.84898    0.69866  -4.078 4.55e-05 ***
-#> diagnosisOther     -0.57859    0.72100  -0.802  0.42227    
-#> ki                  0.07735    0.02947   2.625  0.00867 ** 
+#> (Intercept)         4.81278    2.30775   2.085  0.03703 *  
+#> diagnosisLG glioma  1.39942    0.80736   1.733  0.08304 .  
+#> diagnosisHG glioma  2.84898    0.69866   4.078 4.55e-05 ***
+#> diagnosisOther      0.57859    0.72100   0.802  0.42227    
+#> ki                 -0.07735    0.02947  -2.625  0.00867 ** 
 #> ---
 #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 #> 
@@ -1556,15 +1176,15 @@ summary(stepmodel_logit)
 #> AIC: 99.741
 #> 
 #> Number of Fisher Scoring iterations: 4
-narative_model <- get_narative_model(model = stepmodel_logit, target = "status")
 ```
 
-We fitted a logistic regression to predict status. The model Intercepet is at -4.81. Within this model: <br>, 1. The effect of diagnosis L G glioma is negative with value: -1.4<br>, 2. The effect of diagnosis H G glioma is negative with value: -2.85<br>, 3. The effect of diagnosis Other is negative with value: -0.58<br>, 4. The effect of ki is positive with value: 0.08<br>
+{{% callout note %}}
 
 ## **comments and interprettations**
 
 - from the logistic regression `diagnosis-HG glioma` and karnofsky index are statistically significant predictors of survival.
 - we speak of **odds** when we use logistic regression
+  {{% /callout %}}
 
 ## Now we fit a Cox proportional hazards model:
 
@@ -1615,7 +1235,47 @@ cox_fit %>%
 #> Score (logrank) test = 46.59  on 8 df,   p=2e-07
 ```
 
-We fitted a logistic regression to predict status. The model Intercepet is at -4.81. Within this model: <br>, 1. The effect of diagnosis L G glioma is negative with value: -1.4<br>, 2. The effect of diagnosis H G glioma is negative with value: -2.85<br>, 3. The effect of diagnosis Other is negative with value: -0.58<br>, 4. The effect of ki is positive with value: 0.08<br>
+<h3>
+Hazard Ratios
+</h3>
+
+Recall that the Cox model is expressed by the hazard function `\(h(t)\)`:
+
+`\(h(t) = h_0(t) \times exp(\beta_1x_1 + \beta_2x_2 + \ldots + \beta_px_p)\)`
+
+The quantity of interest from a Cox regression model is the hazard ratio. The quantities `\(exp(\beta_i)\)` are the hazard ratios.
+
+{{% callout note %}}
+The Hazard Ratio (HR) can be interpreted as follows:
+
+- HR = 1: No effect
+- HR \< 1: indicates a decreased risk of death
+- HR \> 1: indicates an increased risk of death
+  {{% /callout %}}
+
+<h3>
+How to Interpret Results
+</h3>
+
+The `estimate` column in the summary above is the regression parameter `\(\beta_i\)` of the Cox model.
+
+<div>
+
+<p>
+<span class="success">The `estimate` column quantifies the effect size (the impact) that the covariate has on the patient’s survival time.</span>
+</p>
+
+</div>
+
+The expression is `\(exp(\beta_i)\)` is the hazard ratio – this is the `blah` column of the summary above.
+
+So for example, we obtained a regression parameter `\(\beta_1 = 0.9152\)` for the placebo vs D-penicillamine (the experiemental drug). The hazard ratio for this covariate is `\(HR = exp(\beta_1) = 2.4968\)`.
+
+{{% callout note %}}
+A HR \< 1 indicates reduced hazard of death.
+
+Therefore, we would say that patients diagnosed with the `LG glioma` have a 2.4968 times <b>increased</b> hazard of death compared to other patients. The p-value associated with this regression parameter is `\(p=0.15161\)`, which indicates that the difference is not significant.
+{{% /callout %}}
 
 ## perform stepwise regression on `cox`
 
@@ -1648,7 +1308,8 @@ summary(stepmodel_cox)
 #> Likelihood ratio test= 40.33  on 5 df,   p=1e-07
 #> Wald test            = 38.72  on 5 df,   p=3e-07
 #> Score (logrank) test = 46.19  on 5 df,   p=8e-09
-narative_model <- get_narative_model_cox(model = stepmodel_cox, target = "status")
 ```
 
-We fitted a Cox Proportional Hazards model to predict status.. Within this model: <br>, 1. The effect of diagnosis H G glioma is positive with value: 2.24<br>, 2. The effect of diagnosis Other is positive with value: 0.72<br>, 3. The effect of ki is negative with value: -0.05<br>, 4. The effect of gtv is positive with value: 0.04<br>
+## comments
+
+- the stepwise regression model results in a optimal set of variables that predict death by brain cancer
