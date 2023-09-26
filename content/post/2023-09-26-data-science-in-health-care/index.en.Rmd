@@ -1,0 +1,736 @@
+---
+title: "Data Science in Health care"
+author: "Bongani Ncube"
+date: "2023-09-26"
+slug: "data-science-in-health-care"
+categories:
+- datascience
+- cox
+- public health
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: "2023-09-26T05:34:14+02:00"
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="//yihui.org/js/math-code.js" defer></script>
+<!-- Just one possible MathJax CDN below. You may use others. -->
+<script defer
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, 
+                      echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.path = "static",
+                      fig.height=6, 
+                      fig.width = 1.777777*6,
+                      fig.align='center',
+                      tidy = FALSE, 
+                      comment = NA, 
+                      highlight = TRUE, 
+                      prompt = FALSE, 
+                      crop = TRUE,
+                      comment = "#>",
+                      collapse = TRUE)
+knitr::opts_knit$set(width = 60)
+library(tidyverse)
+library(reshape2)
+theme_set(theme_light(base_size = 16))
+make_latex_decorator <- function(output, otherwise) {
+  function() {
+      if (knitr:::is_latex_output()) output else otherwise
+  }
+}
+insert_pause <- make_latex_decorator(". . .", "\n")
+insert_slide_break <- make_latex_decorator("----", "\n")
+insert_inc_bullet <- make_latex_decorator("> *", "*")
+insert_html_math <- make_latex_decorator("", "$$")
+```
+
+{{% callout note %}}
+
+## Introduction
+
+Brain Cancers include primary brain tumours which starts in the brain and almost never spread to other parts of the body and secondary tumours which are caused by cancers that began in another part of the body .
+
+>There are more than 40 major types of brain tumours, which are grouped into two main types:
+
++ benign - slow-growing and unlikely to spread. Common types are meningiomas, neuromas, pituitary tumours and craniopharyngiomas.
++ malignant - cancerous and able to spread into other parts of the brain or spinal cord. Common types include astrocytomas, oligodendrogliomas, glioblastomas and mixed gliomas.
+
+> It is estimated that more than 1,900 people were diagnosed with brain cancer in 2023. The average age at diagnosis is 59 years old.
+
+### Brain cancer signs and symptoms
+
+Headaches are often the first symptom of a brain tumour. The headaches can be mild, severe, persistent, or come and go. A headache isn't always a brain tumour but if you're worried, be sure to see your GP.
+
+#### Other symptoms include:
+
+- [x] seizures: severe (e.g. a convulsion) or mild (a fleeting disturbance of awareness, sensation or jerking muscles) weakness or paralysis in part of the body
+- [x] loss of balance
+- [x] general irritability, drowsiness or a change in personality nausea and vomiting
+- [x] disturbed vision, hearing, smell or taste.
+
+
+## References
+
++ Understanding Brain Tumours, Cancer Council Australia ©2020. Last medical review of source booklet: May 2020. 
++ Australian Institute of Health and Welfare. Cancer data in Australia [Internet]. Canberra: Australian Institute of Health and Welfare, 2023 [cited 2023 Sept 04]. Available from: https://www.aihw.gov.au/reports/cancer/cancer-data-in-australia
+
+
+## Objectives of the study
+
++ determine factors that determine mortality of brain cancer patients
++ compare survival times of certain groups of breast cancer patients
++ determine the extend to which diagnosis affects survival of patients
++ learn more about using R for biostatistical studies and clinical research
+
+### Methodology
+
+My research aims at patients’ brain cancer survival analysis . In the analysis I did a detailed research on the variables that determine whether patients get over a disease or surrender in a certain duration time. Thus I used a  non-parametric statistic estimator to create a Kaplan-Meier Survival model to measure the survival function from lifetime duration data. We fit a cox proportional model and Logistic regression model. 
+
+{{% /callout %}}
+
+
+{{% callout note %}}
+
+## Brain Cancer Data
+
+A data frame with 88 observations and 8 variables:
+
+- [x] sex       : Factor with levels "Female" and "Male"
+- [x] diagnosis : Factor with levels "Meningioma", "LG glioma", "HG glioma", and "Other".
+- [x] Location  : factor with levels "Infratentorial" and "Supratentorial".
+- [x] ki        : Karnofsky index.
+- [x] gtv       : Gross tumor volume, in cubic centimeters.
+- [x] stereo    : Stereotactic method factor with levels "SRS" and "SRT".
+- [x] status    : Whether the patient is dead at the end of the study: 0=No, 1=yes.
+- [x] time      : Survival time, in months.
+{{% /callout %}}
+
+## Setup
+
+```{r}
+library(pacman)
+p_load(tidyverse, tidymodels, ISLR2, survival, censored,dlookr,pubh,sjPlot,compareGroups,survminer)
+
+```
+
+### take a look at the dataset
+
+```{r,eval=FALSE}
+BrainCancer<-readr::read_csv("NCU_braincancer.csv")
+```
+
+
+```{r}
+skimr::skim(BrainCancer)
+```
+
+
+## Data wrangling
+```{r}
+data<-BrainCancer |> 
+  mutate(brain_status=ifelse(status==1,"dead","alive"))
+## check missing values
+colSums(is.na(data))
+```    
++ there is only one missing value
+
+```{r}
+## remove the missing values
+cases<-complete.cases(data) 
+data<-data[cases,]
+```
+
+## Explanatory data Analysis(EDA)
+
+## distribution of numeric variables
+
+```{r}
+# Histogram of all numeric variables
+data %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+  facet_wrap(~ key, scales = "free") +
+  geom_histogram(bins=30,fill=tvthemes::avatar_pal()(1))+
+  ggthemes::theme_wsj()
+```
+
+## Correlations
+```{r}
+## select only numeric values
+cor_data<-data %>%
+  keep(is.numeric)
+## create a correlation matrix
+corl<-cor(cor_data)
+corrplot::corrplot(corl,method="color",addCoef.col = "black")
+```
+
+
+{{% callout note %}}
+
++ status is really not supposed to be numeric but rather a factor variable
++ time and gross tumor volume are all positively skewed
++ karnofsky index is as good as being a factor so i will further categorize the data
++ the correlations are not really significant given the variables at hand
+
+{{% /callout %}}
+
+## further manipulation
+
+```{r}
+data <- data |> 
+  mutate(kan_index = ifelse(ki>=80,"index>79","index<80"))
+
+data |> 
+  janitor::tabyl(kan_index)
+```
+
+## comparing dependent variable with numeric variables
+
+```{r}
+subset <- data |>
+  dplyr::select(gtv,time,ki,status)
+
+# Bring in external file for visualisations
+source('functions/visualisations.R')
+
+# Use plot function
+plot <- histoplotter(subset, status, 
+                     chart_x_axis_lbl = "survival status", 
+                     chart_y_axis_lbl = 'Measures',
+                     boxplot_color = 'navy', 
+                     boxplot_fill = tvthemes::avatar_pal()(1), 
+                     box_fill_transparency = 0.2) 
+
+# Add extras to plot
+plot + 
+  tvthemes::theme_theLastAirbender() +
+  tvthemes::scale_color_avatar()+
+  theme(legend.position = 'top') 
+ 
+
+```
+
+## categorical data
+
+```{r}
+iv_rates <- data |>
+  dplyr::mutate(status = ifelse(status==1,"yes","no")) |>
+  select(kan_index,loc,stereo,status) |> 
+  gather() |> 
+  group_by(key,value) |>
+  summarize(count = n()) |> 
+  mutate(prop = count/sum(count)) |>
+  ungroup() 
+
+plot<-iv_rates |>
+  ggplot(aes(fill=key, y=prop, x=value)) + 
+  geom_col(color="black",width = 0.5)+ 
+  facet_wrap(~key,scales="free") +
+  theme(legend.position="bottom") + 
+  geom_label(aes(label=scales::percent(prop)), color="white") + 
+  labs(
+    title = "survival ratio",
+    subtitle = "Brain Cancer Analysis",
+    y = "proportion(%)", 
+    x = "",
+    fill="status",
+    caption="B.Ncube::Data enthusiast") + 
+  scale_y_continuous(labels = scales::percent)+
+  tvthemes::scale_fill_kimPossible()+
+  tvthemes::theme_theLastAirbender(title.font="Slayer",
+                                   text.font = "Slayer")+
+  theme(legend.position = 'none')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+plot
+```
+
+
+### mortality Rate
+
+```{r}
+data|>
+  dplyr::group_by(brain_status)|> 
+  dplyr::summarize(count=n(),
+             mean=mean(gtv, na.rm = T),
+             std_dev=sd(gtv, na.rm = T),
+             median=median(gtv, na.rm = T), 
+             min=min(gtv, na.rm = T),
+             max=max(gtv, na.rm = T))|> 
+ tibble::column_to_rownames(var = "brain_status") |> 
+ base::as.matrix()
+
+#Calculate mortality rate
+print(paste('Mortality rate (%) is ',round(35/(35+53)*100,digits=2)))
+```
+
+
++ we can view this in a plot or chart
+
+```{r , warning=FALSE}
+library(extrafont)
+loadfonts(quiet=TRUE)
+
+iv_rates <- data |>
+  group_by(brain_status) |>
+  summarize(count = n()) |> 
+  mutate(prop = count/sum(count)) |>
+  ungroup() 
+
+plot<-iv_rates |>
+  ggplot(aes(x=brain_status, y=prop, fill=brain_status)) + 
+  geom_col(color="black",width = 0.5)+ 
+  theme(legend.position="bottom") + 
+  geom_label(aes(label=scales::percent(prop)), color="white") + 
+  labs(
+    title = "mortality ratio",
+    subtitle = "Brain Cancer Analysis",
+    y = "proportion(%)", 
+    x = "",
+    fill="status",
+    caption="B.Ncube::Data enthusiast") + 
+  scale_y_continuous(labels = scales::percent)+ 
+geom_hline(yintercept = (sum(data$status)/nrow(data)), col = "white", lty = 2) +
+  tvthemes::scale_fill_kimPossible()+
+  tvthemes::theme_theLastAirbender(title.font="Slayer",
+                                   text.font = "Slayer")+
+  theme(legend.position = 'right')
+plot
+```
+
+
+## Cancer outcome by diagnosis type
+
+```{r}
+ggplot(data) +                                             
+  aes(x=brain_status) +                                 
+  aes(fill=diagnosis) +                                   
+  geom_bar(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..]),   
+      position="dodge",                                   
+      color="black") +                                  
+    tvthemes::scale_color_kimPossible() +   
+    tvthemes::scale_fill_avatar()  +
+  geom_text(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..],           
+     label=scales::percent(..count../tapply(..count.., ..x.. ,sum)[..x..]) ),    
+     stat="count",                              
+     position=position_dodge(1.0),                         
+     vjust=-0.5, 
+     size=3) + 
+  scale_y_continuous(limits=c(0,100)) +                    
+  scale_y_continuous(labels = scales::percent) +     
+  
+ ggtitle("Cancer Outcome, diagnosis type") +                                  # title and axis labels=
+     xlab("Diagnosis") +  
+     ylab("% of Group") + 
+  theme_minimal()   
+```
+{{% callout note %}}
++ a greater percent of those died where diagnosed `HG glioma`
++ lets see the values in the following table
+{{% /callout %}}
+
+
+```{r}
+sjt.xtab(data$diagnosis,data$brain_status,      
+         show.row.prc=TRUE,                        
+         show.summary=FALSE,                                        
+         title="Cross Tab Diagnosis x Cancer") 
+```
+
+## mortality rate by sex
+### Create a customised function for summarising  categorical data per status
+
+```{r}
+summarize_status <- function(tbl){tbl %>% 
+  summarise(n_died = sum(brain_status == "yes"),
+            n_total = n()) %>%
+  ungroup() %>% 
+  mutate(pct_died = n_died / n_total) %>% 
+  arrange(desc(pct_died)) %>% 
+  mutate(low = qbeta(0.025, n_died + 5, n_total - n_died + .5),
+         high = qbeta(0.975, n_died + 5, n_total - n_died + .5),
+         pct = n_total / sum(n_total),
+         percentage=scales::percent(pct_died))
+  } 
+```
+
+### mortality rate summary per sex
+
+```{r}
+data |> 
+  group_by(sex) |> 
+  summarize_status()
+```
+
+{{% callout note %}}
++ from the dataset , $\frac{20}{43}$ men died while the other 15 where woman who died
++ we can present these more visually with the graphs below
+{{% /callout %}}
+
+```{r,echo=FALSE,warning=FALSE}
+iv_rates <- data |> 
+  group_by(brain_status,sex) |>
+  summarize(count = n()) |> 
+  mutate(prop = count/sum(count)) |>
+  ungroup() 
+
+plot<-iv_rates |>
+  ggplot(aes(fill=brain_status, y=prop, x=sex)) + 
+  geom_col(color="black",width = 0.5,position="dodge")+ 
+  theme(legend.position="bottom") + 
+  geom_label(aes(label=scales::percent(prop)), color="white") + 
+  labs(
+    title = "Mortality ratio",
+    subtitle = "Brain Cancer Analysis",
+    y = "proportion(%)", 
+    x = "",
+    fill="status",
+    caption="B.Ncube::Data enthusiast") + 
+  scale_y_continuous(labels = scales::percent)+ 
+geom_hline(yintercept = (sum(data$status)/nrow(data)), 
+           col = "white", lty = 2) +
+  tvthemes::scale_fill_kimPossible()+
+  tvthemes::theme_theLastAirbender(title.font="Slayer",
+                                   text.font = "Slayer")+
+  theme(legend.position = 'right')
+plot
+```
+
+{{% callout note %}}
++ mortality is greater in males than it is in females
++ the white dashed line indicate the overal mortality rate
+{{% /callout %}}
+
+## Outcome by diagnosis faceted by sex
+```{r}
+ggplot(data) +                             # data to use 
+  aes(x=brain_status) +                                        # x = predictor  (factor) 
+  aes(fill=diagnosis) +                                         # fill = outcome (factor)  
+  geom_bar( position="dodge",                                        # side-by-side  
+       color="black") +                                                  # choose color of bar borders 
+    tvthemes::scale_color_kimPossible() +       # choose colors of bars 
+    tvthemes::scale_fill_avatar()  +   # bars 
+  geom_text(aes(label=after_stat(count)),                    # required  
+     stat='count',                                           # required 
+     position=position_dodge(1.0),                           # required for centering  
+     vjust= -0.5, 
+     size=3) + 
+   scale_x_discrete(limits = rev) +                                       # reverse order to 0 cups first 
+   # FORCE y-axis ticks 
+  facet_grid(~ sex)  +                                              # Strata in 1 row 
+  ggtitle("Cancer Outcome, diagnosis type\nStratified") +           # title and axis labels 
+  xlab("") +  
+  ylab("Count") + 
+  theme_bw() + 
+  theme(legend.title=element_blank()) + 
+  theme(legend.text=element_text(color="black", size=6)) + 
+  theme(legend.position="right") 
+```
++ Meningioma affects more women than it affects men.
++ both men and women diagnosed with HG glioma are more likely to die
+
+## is there any association between diagnosis and cancer outcome
+
+```{r}
+data %>% contingency(brain_status ~ diagnosis) 
+```
+
+{{% callout note %}}
+**Comments**
++ the outcome is a result of a `fisher's exact test` for association
++ the plimenary suggest that at 5\% level of significance ,diagnosis( Meningioma , LG glioma ,HG glioma and other diagnostics) and stereo variable are significantly associated with survival of patients.
+{{% /callout %}}
+
+### Bivarate relationships for all variables
+
+```{r}
+results <- compareGroups(brain_status ~ diagnosis+ki+sex+loc+stereo+gtv, data = data) 
+results
+```
+{{% callout note %}}
++ the above results show the relationship between the cancer outcome and patient characteristics
++ the p-values correspond to `chi-squared test` for categorical data and `t.test` for numeric data
++ diagnosis as mentioned in previous results is associated with cancer outcome.
++ Gross tumor volume and kanrfsky index have p-values less than 5% implying there is significant mean differences for these values per each outcome category
+{{% /callout %}}
+
+```{r}
+readytable <- createTable(results, show.ratio=TRUE, show.p.overall = FALSE)       
+print(readytable, header.labels = c(p.ratio = "p-value"))      
+```
+
+{{% callout note %}}
++ the extended output shows more significant categories that determine cancer outcome
++ LG glioma has is the most significant category associated with cancer outcome since its p-value value is `p<0.001` which is less than 5%
++ the same applies for `stereo:SRT`
+{{% /callout %}}
+
+## extended Analysis
+
+```{r}
+library(glue)
+bind_count = function(x){
+  as_tibble(x) %>% 
+  add_count(value) %>% 
+  mutate(value = glue("{value} ({n})")) %>%
+    pull(value)
+  
+}
+```
+
+```{r}
+# Scatter plot
+data %>% 
+  na.omit() %>% 
+  group_by(diagnosis = bind_count(diagnosis)) %>% 
+  summarize_status() %>% 
+  mutate(diagnosis = fct_reorder(diagnosis, pct_died)) %>% 
+  ggplot(mapping = aes(x = pct_died, y = diagnosis)) +
+  geom_point(aes(size = pct), show.legend = T) +
+  geom_errorbarh(aes(xmin = low, xmax = high), height = .3) +
+  labs(
+    x = "Percentage of patients in each category who died",
+    title = "Distribution of status by diagnosis",
+    size = "%prevalence",
+    subtitle = ""
+  ) +
+  scale_x_continuous(labels = percent) +
+  scale_size_continuous(labels = percent) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+{{% callout note %}}
+
+It can also be noted that cumulatively, people with **LG glioma** and **HG glioma**  had high chances of death.
+
+{{% /callout %}}
+
+
+## Survival Analysis.
+
+```{r}
+fit <- survfit(Surv(time, status) ~ sex, data = data)
+# Access to the sort summary table
+summary(fit)$table
+
+ggsurvplot(fit, data = data,
+ surv.median.line = "hv", # Add medians survival
+
+ # Change legends: title & labels
+ legend.title = "Sex",
+ legend.labs = c("Male", "Female"),
+ # Add p-value and tervals
+ pval = TRUE,
+
+ conf.int = TRUE,
+ # Add risk table
+ risk.table = TRUE,
+ tables.height = 0.2,
+ tables.theme = theme_cleantable(),
+
+ # Color palettes. Use custom color: c("#E7B800", "#2E9FDF"),
+ # or brewer color (e.g.: "Dark2"), or ggsci color (e.g.: "jco")
+ palette = "#Dark2",
+ ggtheme = theme_bw(), # Change ggplot2 theme
+ font.main = c(14, "bold", "darkblue"),
+ font.x = c(12, "bold.italic", "darkblue"),
+ font.y = c(12, "bold.italic", "darkblue"),
+ font.tickslab = c(10, "plain", "darkgreen")
+)
+```
+
+{{% callout note %}}
++ females tend to survive longer than men
++ the difference in survival time is not statistically significant at 5% level of significance
+{{% /callout %}}
+
+## difference in survival per diagnosis
+
+```{r,echo=FALSE}
+library(paletteer)
+fit <- survfit(Surv(time, status) ~ diagnosis, data = data)
+
+ggsurvplot(fit, data = data,
+ surv.median.line = "hv", # Add medians survival
+
+ # Change legends: title & labels
+ legend.title = "diagnosis",
+ # Add p-value and tervals
+ pval = TRUE,
+
+ conf.int = TRUE,
+ # Add risk table
+ risk.table = TRUE,
+ tables.height = 0.2,
+ tables.theme = theme_cleantable(),
+
+ # Color palettes. Use custom color: c("#E7B800", "#2E9FDF"),
+ # or brewer color (e.g.: "Dark2"), or ggsci color (e.g.: "jco")
+ palette = "#Dark2",
+ ggtheme = theme_bw(), # Change ggplot2 theme
+ font.main = c(14, "bold", "darkblue"),
+ font.x = c(12, "bold.italic", "darkblue"),
+ font.y = c(12, "bold.italic", "darkblue"),
+ font.tickslab = c(10, "plain", "darkgreen")
+)
+```
+
+{{% callout note %}}
++ Meningioma patients have a longer survival time as compared to other patients
++ there is significant difference in survival times between patients of different diagnosis type
+at 5% level of significance
+
++ the median survival times for `LG glioma, HG glioma, and Other` are approximately 49,11 and 29 months respectively  .
+{{% /callout %}}
+
+## difference in survival per Stereotactic
+
+```{r,echo=FALSE}
+fit <- survfit(Surv(time, status) ~ loc, data = data)
+
+ggsurvplot(fit, data = data,
+ surv.median.line = "hv", # Add medians survival
+
+ # Change legends: title & labels
+ legend.title = "location",
+ # Add p-value and tervals
+ pval = TRUE,
+
+ conf.int = TRUE,
+ # Add risk table
+ risk.table = TRUE,
+ tables.height = 0.2,
+ tables.theme = theme_cleantable(),
+
+ # Color palettes. Use custom color: c("#E7B800", "#2E9FDF"),
+ # or brewer color (e.g.: "Dark2"), or ggsci color (e.g.: "jco")
+ palette = "#Dark2",
+ ggtheme = theme_bw(), # Change ggplot2 theme
+ font.main = c(14, "bold", "darkblue"),
+ font.x = c(12, "bold.italic", "darkblue"),
+ font.y = c(12, "bold.italic", "darkblue"),
+ font.tickslab = c(10, "plain", "darkgreen")
+)
+```
+
+{{% callout note %}}
++ those with location at supratentorial have a longer survival time as compared to their counterparts
++ the difference in survival time is rather not statistically significant
+{{% /callout %}}
+
+## Now lets fit a model
+### Logistic regression
+
+```{r logistic_reg}
+source(file = "R/helper.R")
+data<- data |> 
+  select(-brain_status)
+
+data$status<-as.factor(data$status)
+
+lr_mod <- parsnip::logistic_reg()|> 
+   set_engine('glm') |> 
+  set_mode("classification")  
+
+model<-lr_mod |> 
+  fit(status~. -time,data=data)
+
+model %>%
+  pluck("fit") %>%
+  summary()
+```
+```{r,echo=FALSE}
+model<-glm(status~. -time,data=data,family=binomial)
+```
+
+# perform a stepwise regression 
+```{r}
+stepmodel_logit <- stats::step(model, direction = "both", trace = FALSE)
+summary(stepmodel_logit)
+
+```
+{{% callout note %}}
+
+## **comments and interprettations**
+
++ from the logistic regression `diagnosis-HG glioma` and karnofsky index are statistically significant predictors of survival.
++ we speak of **odds** when we use logistic regression
+{{% /callout %}}
+
+## Now we fit a Cox proportional hazards model:
+
+```{r}
+cox_spec <- 
+  proportional_hazards() %>% 
+  set_engine("survival")
+
+cox_fit <- cox_spec |> 
+  fit(Surv(time, status) ~ ., data = BrainCancer)
+
+
+cox_fit %>%
+  pluck("fit") %>%
+  summary()
+
+```
+<h3>Hazard Ratios</h3>
+
+Recall that the Cox model is expressed by the hazard function $h(t)$:
+
+$h(t) = h_0(t) \times exp(\beta_1x_1 + \beta_2x_2 + \ldots + \beta_px_p)$
+
+The quantity of interest from a Cox regression model is the hazard ratio. The quantities $exp(\beta_i)$ are the hazard ratios. 
+
+{{% callout note %}}
+The Hazard Ratio (HR) can be interpreted as follows:
+
+- HR = 1: No effect
+- HR < 1: indicates a decreased risk of death
+- HR > 1: indicates an increased risk of death
+{{% /callout %}}
+
+<h3> How to Interpret Results </h3>
+
+The `estimate` column in the summary above is the regression parameter $\beta_i$ of the Cox model. 
+
+<div>
+<p><span class="success">The `estimate` column quantifies the effect size (the impact) that the covariate has on the patient's survival time.</span></p>
+</div>
+
+The expression is $exp(\beta_i)$ is the hazard ratio -- this is the `blah` column of the summary above. 
+
+So for example, we obtained a regression parameter $\beta_1 = 0.9152$ for the placebo vs D-penicillamine (the experiemental drug). The hazard ratio for this covariate is $HR = exp(\beta_1) = 2.4968$.
+
+{{% callout note %}}
+A HR < 1 indicates reduced hazard of death.
+
+Therefore, we would say that  patients diagnosed with the `LG glioma` have a 2.4968 times <b>increased</b> hazard of death compared to other patients. The p-value associated with this regression parameter is $p=0.15161$, which indicates that the difference is not significant.
+{{% /callout %}}
+
+## perform stepwise regression on `cox`
+
+```{r , echo=FALSE}
+cox_fit <- coxph(Surv(time, status) ~ ., data = BrainCancer)
+```
+
+```{r}
+stepmodel_cox <- MASS::stepAIC(cox_fit, direction = "both", trace = FALSE)
+summary(stepmodel_cox)
+```
+## comments
+
++ the stepwise regression model results in a optimal set of variables that predict death by brain cancer
+
