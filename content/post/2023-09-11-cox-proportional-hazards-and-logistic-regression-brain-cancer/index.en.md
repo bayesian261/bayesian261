@@ -1143,7 +1143,6 @@ model %>%
 #> 
 #>     Null deviance: 117.264  on 86  degrees of freedom
 #> Residual deviance:  84.789  on 77  degrees of freedom
-#>   (1 observation deleted due to missingness)
 #> AIC: 104.79
 #> 
 #> Number of Fisher Scoring iterations: 5
@@ -1172,7 +1171,6 @@ summary(stepmodel_logit)
 #> 
 #>     Null deviance: 117.264  on 86  degrees of freedom
 #> Residual deviance:  89.741  on 82  degrees of freedom
-#>   (1 observation deleted due to missingness)
 #> AIC: 99.741
 #> 
 #> Number of Fisher Scoring iterations: 4
