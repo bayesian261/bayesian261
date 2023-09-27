@@ -494,7 +494,7 @@ data<-data[cases,]
 
 ## Explanatory data Analysis(EDA)
 
-## distribution of numeric variables
+### distribution of numeric variables
 
 ``` r
 # Histogram of all numeric variables
@@ -508,6 +508,12 @@ data %>%
 ```
 
 <img src="staticunnamed-chunk-6-1.png" width="1023.999552" style="display: block; margin: auto;" />
+
+<div class="blue">
+
+- **Time and gtv are generally right skewed**
+
+</div>
 
 ## Correlations
 
@@ -569,9 +575,8 @@ plot <- histoplotter(subset, status,
 
 # Add extras to plot
 plot + 
-  tvthemes::theme_theLastAirbender() +
-  tvthemes::scale_color_avatar()+
-  theme(legend.position = 'top') 
+  ggthemes::theme_fivethirtyeight() +
+  tvthemes::scale_color_avatar() 
 ```
 
 <img src="staticunnamed-chunk-9-1.png" width="1023.999552" style="display: block; margin: auto;" />
@@ -603,8 +608,7 @@ plot<-iv_rates |>
     caption="B.Ncube::Data enthusiast") + 
   scale_y_continuous(labels = scales::percent)+
   tvthemes::scale_fill_kimPossible()+
-  tvthemes::theme_theLastAirbender(title.font="Slayer",
-                                   text.font = "Slayer")+
+ ggthemes::theme_fivethirtyeight() +
   theme(legend.position = 'none')+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 plot
@@ -634,6 +638,12 @@ print(paste('Mortality rate (%) is ',round(35/(35+53)*100,digits=2)))
 #> [1] "Mortality rate (%) is  39.77"
 ```
 
+<div class="blue">
+
+- **Mortality rate is approximately: 40%**
+
+</div>
+
 - we can view this in a plot or chart
 
 ``` r
@@ -661,8 +671,7 @@ plot<-iv_rates |>
   scale_y_continuous(labels = scales::percent)+ 
 geom_hline(yintercept = (sum(data$status)/nrow(data)), col = "white", lty = 2) +
   tvthemes::scale_fill_kimPossible()+
-  tvthemes::theme_theLastAirbender(title.font="Slayer",
-                                   text.font = "Slayer")+
+  ggthemes::theme_fivethirtyeight() +
   theme(legend.position = 'right')
 plot
 ```
@@ -697,7 +706,7 @@ ggplot(data) +
 
 <img src="staticunnamed-chunk-13-1.png" width="1023.999552" style="display: block; margin: auto;" />
 {{% callout note %}}
-+ a greater percent of those died where diagnosed `HG glioma`
++ Many of those who died where diagnosed with `HG glioma`
 + lets see the values in the following table
 {{% /callout %}}
 
@@ -923,7 +932,7 @@ data %>% contingency(brain_status ~ diagnosis)
 {{% callout note %}}
 **Comments**
 + the outcome is a result of a `fisher's exact test` for association
-+ the plimenary suggest that at 5% level of significance ,diagnosis( Meningioma , LG glioma ,HG glioma and other diagnostics) and stereo variable are significantly associated with survival of patients.
++ the plimenary analysis suggests that at 5% level of significance ,diagnosis( Meningioma , LG glioma ,HG glioma and other diagnostics) and stereo variable are significantly associated with survival of patients.
 {{% /callout %}}
 
 ### Bivarate relationships for all variables
@@ -985,7 +994,7 @@ print(readytable, header.labels = c(p.ratio = "p-value"))
 
 {{% callout note %}}
 + the extended output shows more significant categories that determine cancer outcome
-+ LG glioma has is the most significant category associated with cancer outcome since its p-value value is `p<0.001` which is less than 5%
++ LG glioma is the most significant category associated with cancer outcome since its p-value value is `p<0.001` which is less than 5%
 + the same applies for `stereo:SRT`
 {{% /callout %}}
 
@@ -1103,7 +1112,6 @@ at 5% level of significance
 ### Logistic regression
 
 ``` r
-source(file = "R/helper.R")
 data<- data |> 
   select(-brain_status)
 
@@ -1148,7 +1156,7 @@ model %>%
 #> Number of Fisher Scoring iterations: 5
 ```
 
-# perform a stepwise regression
+## perform a stepwise regression
 
 ``` r
 stepmodel_logit <- stats::step(model, direction = "both", trace = FALSE)
@@ -1181,8 +1189,9 @@ summary(stepmodel_logit)
 ## **comments and interprettations**
 
 - from the logistic regression `diagnosis-HG glioma` and karnofsky index are statistically significant predictors of survival.
-- we speak of **odds** when we use logistic regression
-  {{% /callout %}}
+- we speak of **odds** when we use logistic regression and `diagnosis-HG glioma` increases the odds of death of brain cancer patients because `exp(coef)`
+
+{{% /callout %}}
 
 ## Now we fit a Cox proportional hazards model:
 
@@ -1267,10 +1276,10 @@ The `estimate` column in the summary above is the regression parameter `\(\beta_
 
 The expression is `\(exp(\beta_i)\)` is the hazard ratio – this is the `blah` column of the summary above.
 
-So for example, we obtained a regression parameter `\(\beta_1 = 0.9152\)` for the placebo vs D-penicillamine (the experiemental drug). The hazard ratio for this covariate is `\(HR = exp(\beta_1) = 2.4968\)`.
+So for example, we obtained a regression parameter `\(\beta_1 = 0.9152\)` for the diagnosisLG glioma vs other type diagnosis. The hazard ratio for this covariate is `\(HR = exp(\beta_1) = 2.4968\)`.
 
 {{% callout note %}}
-A HR \< 1 indicates reduced hazard of death.
+A HR \> 1 indicates increased hazard of death.
 
 Therefore, we would say that patients diagnosed with the `LG glioma` have a 2.4968 times <b>increased</b> hazard of death compared to other patients. The p-value associated with this regression parameter is `\(p=0.15161\)`, which indicates that the difference is not significant.
 {{% /callout %}}
@@ -1311,3 +1320,16 @@ summary(stepmodel_cox)
 ## comments
 
 - the stepwise regression model results in a optimal set of variables that predict death by brain cancer
+- It can be noted that just like in logistic regression , `diagnosisHG glioma` has an increased `hazard` of death the same way it increases the `odds` of dying
+
+<div class="blue">
+
+- **To be continued**
+
+</div>
+
+{{% callout warning %}}
++ this is a work in progress
++ you are allowed to add in your thoughts
++ I am constantly updating this blogpost
+{{% /callout %}}
