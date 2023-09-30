@@ -203,10 +203,9 @@ sections:
       organization: DataCamp
       organization_url: https://www.datacamp.com
       title: Joining Data with SQL
-
-
-    subtitle: null
-    title: Course
+      url: ""
+      text: ""
+    title: Certifications
   design:
     columns: "2"
 - block: collection

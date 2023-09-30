@@ -19,3 +19,441 @@ image:
   preview_only: no
 projects: []
 ---
+
+# **1. Data Validation**
+
+This data set has 947 rows, 8 columns. I have validated all variables and I have made several changes after validation: remove rows with null values in calories, carbohydrate, sugar, protein and replace null values in high_traffic with "Low".
+
+- recipe: 947 unique identifiers without missing values (895 after dataset cleaning). No cleaning is needed.
+- calories: 895 non-null values. I fill 52 missed values with the mean grouped by category and servings.
+- carbohydrate: 895 non-null values. I fill 52 missed values with the mean grouped by category and servings.
+- sugar: 895 non-null values. I fill 52 missed values with the mean grouped by category and servings.
+- protein: 895 non-null values. I fill 52 missed values with the mean grouped by category and servings.
+- category: 11 unique values without missing values, whereas there were 10 values in the description. The extra valie is 'Chicken Breast'. I united it with the 'Chicken' value.
+- servings: 6 unique values without missing values. By description, it should be numeric variable, but now it's character. Has two extra values: '4 as a snack' and '6 as a snack'. I united them with '4' and '6' and changed the column's type to integer. 
+- high_traffic: only 1 non-null value ("High"). Replaced null values with "Low".
+
+## load in necessary packages
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(janitor)
+```
+
+## read in the dataset
+```{r}
+recipe_data<-readr::read_csv("recipe_site_traffic_2212.csv")
+recipe_data
+```
+
+## look at the missing values
+
++ validating the dataset for missing values
+
+```{r}
+colSums(is.na(recipe_data))
+```
+
+## data wrangling and exploration
+
++ There are only 2 and 1 recipes of **4 as a snack** and **6 as a snack** servings, so I'll rename them to "4" and "6" for simplicity and convert to numerical.
++ replace null values of high_traffic with Low
++ chicken breast turned to just chicken
+
+```{r}
+recipe_data_new<- recipe_data |> 
+  mutate(servings=readr::parse_number(servings)) |> 
+  mutate(high_traffic=if_else(is.na(high_traffic),"low",high_traffic)) |>
+  mutate(category=if_else(category=="Chicken Breast","Chicken",category))
+  
+```
+
++ inspect the data for the new changes
+```{r}
+recipe_data_new |> 
+  tabyl(servings)
+```
+```{r}
+recipe_data_new |> 
+  tabyl(category)
+```
+```{r}
+recipe_data_new |> 
+  tabyl(high_traffic)
+```
+### replace missing values with mean
+
+```{r}
+recipe_data_new<-recipe_data_new |> 
+  mutate(sugar = replace_na(sugar,mean(sugar,na.rm=T)),
+         calories = replace_na(calories,mean(calories,na.rm=T)),
+         protein = replace_na(protein,mean(protein,na.rm=T)),
+         carbohydrate =replace_na(carbohydrate,mean(carbohydrate,na.rm=T)))
+recipe_data_new
+```
+
+## Data visualisation
+
+```{r}
+ggplot(recipe_data_new) +                            
+  aes(x=factor(servings)) +                                        
+  aes(fill=high_traffic) +                                           
+  geom_bar(position="dodge",                                          
+       color="black") +                                                 
+  geom_text(aes(label=after_stat(count)),                      
+     stat='count',                                           
+     position=position_dodge(1.0),                             
+     vjust= -0.5, 
+     size=3) 
+```
++ this feature doesn't have a big influence on target variable because recipes with high traffic are are many for each servings as compared to the those in with low traffic.
+
+
+```{r}
+ggplot(recipe_data_new) +                            
+  aes(x=category) +                                        
+  aes(fill=high_traffic) +                                           
+  geom_bar(position="dodge",                                          
+       color="black") +                                                 
+  geom_text(aes(label=after_stat(count)),                      
+     stat='count',                                           
+     position=position_dodge(1.0),                             
+     vjust= -0.5, 
+     size=3)+
+  theme(legend.position = 'none')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Conclusion: 
+
++ Potato, Pork and Vegetable categories have **a lot more recipes with high traffic** than with low traffic. 
++ One Dish Meal, Lunch/Snacks, Meat, Dessert categories have just **more recipes with high traffic** than with low traffic. 
+
+## Correlations
+```{r}
+## select only numeric values
+cor_data<-recipe_data_new %>%
+  keep(is.numeric)
+## create a correlation matrix
+corl<-cor(cor_data)
+corrplot::corrplot(corl,method="color",addCoef.col = "black")
+```
++ the heatmap above suggests that there is little to no linear negative relationship in 5 variables 
++ calories, carbohydrate, sugar, protein, servings. All values are close to 0, so we can say there is a weak relationship between the variables. 
+
+
+## box plots
+
++ individual plots of both nutrients are shown in the facets below
++ looking if there outliers in the nutrients
+```{r}
+recipe_data_new |> 
+  select(sugar,calories,carbohydrate,protein) |>
+  gather() |> 
+  ggplot(aes(key,value,fill=key)) + 
+  ggthemes::scale_fill_tableau()+
+  geom_boxplot() +
+  facet_wrap(~key,scales="free")
+```
+
+```{r}
+recipe_data_new |> 
+  select(sugar,calories,carbohydrate,protein) |>
+  gather() |> 
+  ggplot(aes(value,fill=key)) + 
+  ggthemes::scale_fill_tableau()+
+  geom_histogram() +
+  facet_wrap(~key,scales="free")
+```
++ from the histograms above ,both nutrients are seen to be right skewed 
+
+## let's visually inspect single variables
+
++ look at calories
+```{r}
+recipe_data_new |> 
+  ggplot(aes(calories)) + 
+  ggthemes::scale_fill_tableau()+
+  geom_histogram() 
+  
+```
+
++ the data for calories is right skewed as seen from the histogram
+
+```{r}
+recipe_data_new |> 
+  ggplot(aes(x=1,y=calories)) + 
+  ggthemes::scale_fill_tableau()+
+  geom_boxplot(outlier.colour="red") 
+  
+```
+
++ the points in red indicate potential outliers in the data
+
+```{r}
+recipe_data_new |> 
+  select(sugar,calories,carbohydrate,protein,high_traffic) |>
+  gather("key","value",-high_traffic) |> 
+  ggplot(aes(value,color=high_traffic)) + 
+  ggthemes::scale_fill_tableau()+
+  geom_density() +
+  facet_wrap(~key,scales="free")
+```
+
+In R, the amazing Tidymodels framework provides a collection of packages for modeling and machine learning using **tidyverse** principles.
+
+-   `initial_split()`: specifies how data will be split into a training and testing set
+
+-   `training()` and `testing()` functions extract the data in each split
+
+### data spliting
+
+```{r plot, message=F, warning=F}
+recipe_model_data <- recipe_data_new |> 
+  mutate(high_traffic=if_else(high_traffic=="High",1,0)) |> 
+  mutate(high_traffic=as.factor(high_traffic)) |> 
+  select(-recipe)
+
+# Split data into 70% for training and 30% for testing
+set.seed(2056)
+recipe_data_split <- recipe_model_data |> 
+  initial_split(prop = 0.70)
+
+
+# Extract the data in each split
+recipe_data_train <- training(recipe_data_split)
+recipe_data_test <- testing(recipe_data_split)
+
+
+# Print the number of cases in each split
+cat("Training cases: ", nrow(recipe_data_train), "\n",
+    "Test cases: ", nrow(recipe_data_test), sep = "")
+
+
+# Print out the first 5 rows of the training set
+recipe_data_train|>
+  slice_head(n = 5)
+
+```
+
+## Train and Evaluate a Binary Classification Model
+
+OK, now we're ready to train our model by fitting the training features to the training labels (`high_trafffic`). 
+
+
+## Preprocess the data for modelling
+
++ normalize all numerical features
++ turn categorical data to numerical data by creating dummy variables
+
+```{r recipes}
+recipe_data_recipe <- recipe(high_traffic ~ ., data = recipe_data_train)|>
+  step_normalize(all_numeric_predictors())|>
+  step_dummy(all_nominal_predictors()) 
+
+```
+
+
+## fit the model
+```{r workflow}
+# Redefine the model specification
+logreg_spec <- logistic_reg()|>
+  set_engine("glm")|>
+  set_mode("classification")
+
+# Bundle the recipe and model specification
+lr_wf <- workflow()|>
+  add_recipe(recipe_data_recipe)|>
+  add_model(logreg_spec)
+
+# Print the workflow
+lr_wf
+
+```
+
+
+```{r fit_wf}
+# Fit a workflow object
+lr_wf_fit <- lr_wf|>
+  fit(data = recipe_data_train)
+
+# Print wf object
+lr_wf_fit 
+```
+```{r}
+lr_fitted_add <- lr_wf_fit|>
+  extract_fit_parsnip()|> 
+  tidy() |> 
+  mutate(Significance = ifelse(p.value < 0.05, 
+                               "Significant", "Insignificant"))|> 
+  arrange(desc(p.value)) 
+#Create a ggplot object to visualise significance
+plot <- lr_fitted_add|> 
+  ggplot(mapping = aes(x=term, y=p.value, fill=Significance)) +
+  geom_col() + 
+  ggthemes::scale_fill_tableau() +
+  theme(axis.text.x = element_text(face="bold", 
+                                   color="#0070BA",
+                                   size=8, 
+                                   angle=90)) +
+  geom_hline(yintercept = 0.05, col = "black", lty = 2) +
+  labs(y="P value", 
+       x="Terms",
+       title="P value significance chart",
+       subtitle="significant variables in the model",
+       caption="Produced by Bongani Ncube")
+plot
+```
+
++ all variables whose p value lies below the black line are `statistically significant`
+
+
+
+```{r eval_wf}
+# Make predictions on the test set
+results <- recipe_data_test|>
+  select(high_traffic)|>
+  bind_cols(lr_wf_fit|>
+              predict(new_data = recipe_data_test))|>
+  bind_cols(lr_wf_fit|>
+              predict(new_data = recipe_data_test, type = "prob"))
+
+# Print the results
+results|>
+  slice_head(n = 10)
+
+```
+
+Let's take a look at the confusion matrix:
+
+```{r conf_mat2}
+# Confusion matrix for prediction results
+results|>
+  conf_mat(truth = high_traffic, estimate = .pred_class) 
+
+```
+
+
+```{r conf_mat_viz}
+# Visualize conf mat
+update_geom_defaults(geom = "rect", new = list(fill = "midnightblue", alpha = 0.7))
+
+results|>
+  conf_mat(high_traffic, .pred_class)|>
+  autoplot()
+
+```
+
+What about our other metrics such as ppv, sensitivity etc?
+
+```{r eval_met}
+eval_metrics <- metric_set(ppv, recall, accuracy, f_meas)
+# Evaluate other desired metrics
+eval_metrics(data = results, truth = high_traffic, estimate = .pred_class)
+
+# Evaluate ROC_AUC metrics
+results|>
+  roc_auc(high_traffic, .pred_0)
+
+# Plot ROC_CURVE
+results|>
+  roc_curve(high_traffic, .pred_0)|>
+  autoplot()
+```
+
+
+## Model 2 Random forest
+```{r rand_forest}
+
+# Build a random forest model specification
+rf_spec <- rand_forest()|>
+  set_engine("ranger", importance = "impurity")|>
+  set_mode("classification")
+
+# Bundle recipe and model spec into a workflow
+rf_wf <- workflow()|>
+  add_recipe(recipe_data_recipe)|>
+  add_model(rf_spec)
+
+# Fit a model
+rf_wf_fit <- rf_wf|>
+  fit(data = recipe_data_train)
+
+# Make predictions on test data
+results <- recipe_data_test|>
+  select(high_traffic)|>
+  bind_cols(rf_wf_fit|>
+              predict(new_data = recipe_data_test))|>
+  bind_cols(rf_wf_fit|>
+              predict(new_data = recipe_data_test, type = "prob"))
+
+
+
+```
+
+## Model 2 : evaluation
+
+```{r eval_rf}
+# Confusion metrics for rf_predictions
+results|>
+  conf_mat(high_traffic, .pred_class)
+
+# Confusion matrix plot
+results|>
+  conf_mat(high_traffic, .pred_class)|>
+  autoplot()
+
+```
+
+
+
+```{r other_met}
+# Evaluate other intuitive classification metrics
+rf_met <- results|>
+  eval_metrics(truth = high_traffic, estimate = .pred_class)
+
+# Evaluate ROC_AOC
+auc <- results|>
+  roc_auc(high_traffic, .pred_0)
+
+# Plot ROC_CURVE
+curve <- results|>
+  roc_curve(high_traffic, .pred_0)|>
+  autoplot()
+
+# Return metrics
+list(rf_met, auc, curve)
+
+
+```
+
+let's make a Variable Importance Plot to see which predictor variables have the most impact in our model.
+
+```{r}
+# Load vip
+library(vip)
+
+# Extract the fitted model from the workflow
+rf_wf_fit|>
+  extract_fit_parsnip()|>
+# Make VIP plot
+  vip()
+```
+
+**Conclusion:**
+
+Recall, Accuracy and F1 Score of High traffic by the Logistic Regression model are 0.78, 0.80, 0.76, and by Random Forest model are 0.67, 0.77, 0.71. That means the **Logistic Regression model fits the features better and has less error in predicting values**.
+
+## Recommendations for future actions
+
+To help Product Manager predict the high traffic of the recipes, we can deploy this Logistic Regression Model into production. By implementing this model, about 80% of the prediction will make sure the traffic will be high. This will help Product Manager build their confidence in generating more traffic to the rest of the website.
+
+To implement and improve the model, I will consider the following steps:
+
+- Looking for best ways to deploy this model in terms of performance and costs. The ideal way is to deploy this machine learning model on edge devices for its convenience and security and test the model in newly hired product analysts.
+- Collecting more data, e.g. **time to make**, **cost per serving**, **ingredients**, **site duration time** (how long users were at the recipe page), **income links** (from what sites users came to the recipe page), **combinations of recipes** (what recipes user visited at the same session with the current recipe).
+- Feature Engineering, e.g increase number of values in **category**, create more meaningful features from the variables.
+
+## KPI and the performance of 2 models using KPI
+
+The company wants to increase an accuracy of prediction of high traffic. Therefore, we would consider using **accuracy** of predictions which predicted high traffic as a KPI to compare 2 models again. The higher the percentage, the better the model performs. The **Logistic Regression model has 80%** of the accuracy whereas the accuracy of the Random Forest is lower (77%). 
