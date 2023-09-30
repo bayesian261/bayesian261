@@ -33,9 +33,9 @@ social:
   link: /#contact
 - display:
     header: true
-- icon: graduation-cap
-  icon_pack: fas
-  link: ""
+- icon: r-project
+  icon_pack: fab
+  link: "https://rpubs.com/BayesianN"
 - icon: github
   icon_pack: fab
   link: https://github.com/bayesian261

@@ -1,0 +1,22 @@
+---
+title: Employee Attrition
+author: Bongani Ncube
+date: '2023-09-30'
+slug: []
+categories:
+  - classification
+  - datascience
+  - xgboost
+  - predictivemodeling
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2023-09-30T16:31:06+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
