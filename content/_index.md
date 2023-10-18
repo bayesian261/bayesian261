@@ -46,7 +46,7 @@ sections:
       icon: file-excel
       icon_pack: fa
       name: Excel
-      title: Skills
+    title: Skills and Expertise
 - block: experience
   content:
     date_format: Jan 2006
@@ -106,6 +106,24 @@ sections:
       organization: Datacamp
       organization_url: https://www.datacamp.com
       title: Data Scientist Associate
+      url: ""
+      
+    - certificate_url: https://www.datacamp.com/certificate/DS0025275212573
+      date_end: ""
+      date_start: "2023-06-25"
+      description: ""
+      organization: Datacamp
+      organization_url: https://www.datacamp.com
+      title: Data Scientist Proffesional
+      url: ""
+      
+    - certificate_url: https://www.datacamp.com/certificate/DA0027560169808
+      date_end: ""
+      date_start: "2023-10-10"
+      description: ""
+      organization: Datacamp
+      organization_url: https://www.datacamp.com
+      title: Data Analyst Proffesional
       url: ""
       
     - certificate_url: https://www.datacamp.com/statement-of-accomplishment/course/cb7f291e87810b77c3c240c242e0712bab8556f6
