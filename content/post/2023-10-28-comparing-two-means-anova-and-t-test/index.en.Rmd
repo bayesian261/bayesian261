@@ -249,6 +249,7 @@ within-level variance, this means that the levels affect the
 explanatory variable more than the random error (corresponding to the
 within-level variance), and that the explanatory variable is likely
 to be significantly influenced by the levels.
+
 {{% /callout %}}
 
 

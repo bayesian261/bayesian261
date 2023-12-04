@@ -525,6 +525,22 @@ It can also be noted that cumulatively, people with **LG glioma** and **HG gliom
 ## Survival Analysis.
 
 ```{r}
+library(finalfit)
+explanatory<-c("sex","diagnosis","loc","ki","gtv","stereo")
+dependent_os<-"Surv(time, status)"
+
+data |> 
+  finalfit(dependent_os,explanatory) 
+
+
+dependent_os1<-"status"
+data |> 
+  finalfit(dependent_os1 ,explanatory) 
+
+```
+
+
+```{r}
 fit <- survfit(Surv(time, status) ~ sex, data = data)
 # Access to the sort summary table
 summary(fit)$table
@@ -654,6 +670,8 @@ model %>%
   pluck("fit") %>%
   summary()
 ```
+
+
 ```{r,echo=FALSE}
 model<-glm(status~. -time,data=data,family=binomial)
 ```
